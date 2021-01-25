@@ -31,9 +31,9 @@ class Orbit(orbits.orbit):
         logger.debug(f"ephemeris.mjd={eph.mjd} [mjd]")
 
         x_ECEF, y_ECEF, z_ECEF, dte = 0, 0, 0, 0
-        #! --------------------------------------------------------------------- #
-        #! TODO (TP3)                                                            #
-        #! --------------------------------------------------------------------- #
+        #############################################################################
+        # A FAIRE (TP3)                                                             #
+        #############################################################################
 
         #* Step 1
         logger.debug("Convert specified date from mjd to time. Compute the time variation.")
@@ -133,6 +133,3 @@ class Orbit(orbits.orbit):
 
         return X_ECEF.flatten(), dte
 
-    def __repr__(self):
-        for s in self.__dict__:
-            print('%-35s : ' % (s), self.__dict__.get(s))
