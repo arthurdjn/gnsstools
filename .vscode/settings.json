@@ -1,0 +1,39 @@
+{
+    "psi-header.lang-config": [
+		{
+			"language": "python",
+			"begin": "",
+			"end": "",
+            "prefix": "# ",
+            "blankLinesAfter": 1,
+        },
+	],
+    "psi-header.templates": [
+        {
+            "language": "*",
+            "template": [
+                "Encoding: UTF-8",
+                "File: <<filename>>",
+                "Creation: <<filecreated('dddd MMMM Do YYYY')>>",
+                "Author: Arthur Dujardin (<<author>>)",
+                "------",
+                "Copyright (c) <<year>>, Makina Corpus",
+            ]
+        },
+    ],
+    "python.pythonPath": "C:\\Programs\\anaconda3\\python.exe",
+    "cSpell.words": [
+        "astype"
+    ],
+
+    "python.formatting.autopep8Args": [
+        "--max-line-length=200"
+    ],
+
+    "markdown-toc.depthTo": 3,
+
+    "prettier.tabWidth": 4,
+    "prettier.printWidth": 99999,
+    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
+    
+}

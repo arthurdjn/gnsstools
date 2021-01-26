@@ -63,8 +63,40 @@ class gnsstime(datetime):
 
     """
 
-    def __new__(cls, *args, **kwargs):
-        return datetime.__new__(cls, *args, **kwargs)
+    def __new__(cls, year, month=None, day=None,
+                hour=0, minute=0, second=0, microsecond=0, **kwargs):
+
+        # Return None if the date is not valid
+        if year is None or month is None or day is None:
+            return None
+
+        # Convert the values to integer
+        year = int(year)
+        month = int(month)
+        day = int(day)
+        hour = int(hour)
+        minute = int(minute)
+        # Split microsecond from second (i.e. second=1.9 -> second=1, microsecond=900000)
+        microsecond_, second = math.modf(float(second))
+        microsecond_ = math.floor(microsecond_ * 1e6)
+        second = math.floor(second)
+        microsecond = math.floor(microsecond)
+
+        # Use the microsecond provided with the second (if any)
+        if microsecond_ > microsecond:
+            microsecond = microsecond_
+
+        # Format the year, in case its a two digit number.
+        # See the format used in RINEX files and navigation elements for more details.
+        if year < 80:
+            year = 2000 + year
+        else:
+            1900 + year
+
+        # Initialize from the parent method
+        return datetime.__new__(cls, year, month=month, day=day,
+                                hour=hour, minute=minute, second=second,
+                                microsecond=microsecond, **kwargs)
 
     @property
     def session(self):
@@ -209,8 +241,8 @@ class gnsstime(datetime):
         hour = math.floor(hour)
         minute = math.floor(minute)
         second = math.floor(second)
+        microsecond, second = math.modf(second)
         microsecond = math.floor(microsecond * 1e6)
-
         return gnsstime(year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
 
     @classmethod

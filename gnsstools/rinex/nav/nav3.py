@@ -1,14 +1,14 @@
-# File: rinex3.py
-# Creation: Saturday January 23rd 2021
-# Author: Arthur Dujardin
+# Encoding: UTF-8
+# File: nav3.py
+# Creation: Tuesday January 26th 2021
+# Author: Arthur Dujardin (arthurdjn)
 # ------
-# Copyright (c) 2021 Arthur Dujardin
+# Copyright (c) 2021, Makina Corpus
 
 
 r"""
 This module handles reading `RINEX3` files. 
 It was only tested with `RINEX` version 3.03, but should works for any 3. versions.
-
 """
 
 
@@ -22,17 +22,10 @@ from gnsstools import gnsstime
 
 
 __all__ = [
-    "Rinex3Reader"
+    "Rinex3NavReader"
 ]
 
 
-# Header map
-# Table A1 p50
-FILENAME_FIELDS_MAP = []
-
-
-# Fields map row locations
-# -------------------------------------------
 # satellite  '0:3'      'G01'
 # year       '4:8'      '2018'
 # month      '9:11'     '10'
@@ -40,19 +33,19 @@ FILENAME_FIELDS_MAP = []
 # hour       '15:17'    '18'
 # minute     '18:20'    '00'
 # second     '21:23'    '00'
-# 1/         '23:42'    '-2.745445817709E-05'
-# 2/         '42:62'    '-1.080024958355E-11'
-# 3/         '61:80'    ' 0.000000000000E+00'
-# -------------------------------------------
-# 1/         '4:23'     ' 3.500000000000E+01'
-# 2/         '23:42'    ' 1.175000000000E+01'
-# 3/         '42:61'    ' 4.424827168955E-09'
-# 4/         '61:80'    ' 2.781290457443E+00'
+# -1/        '23:42'    '-2.745445817709E-05'
+# -2/        '42:62'    '-1.080024958355E-11'
+# -3/        '61:80'    ' 0.000000000000E+00'
+#1/          '4:23'     ' 3.500000000000E+01'
+#2/          '23:42'    ' 1.175000000000E+01'
+#3/          '42:61'    ' 4.424827168955E-09'
+#4/          '61:80'    ' 2.781290457443E+00'
 
 
-# Fields map (name, row location) for GPS satellites
+# Fields for GPS satellites
 G_FIELDS_MAP = [
-    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"), ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
+    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"),
+     ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
      ("SVClockBias", "23:42"), ("SVClockDrift", "42:61"), ("SVClockDriftRate", "61:80")],
     [("IODE", "4:23"), ("Crs", "23:42"), ("DeltaN", "42:61"), ("M0", "61:80")],
     [("Cuc", "4:23"), ("e", "23:42"), ("Cus", "42:61"), ("sqrtA", "61:80")],
@@ -62,62 +55,62 @@ G_FIELDS_MAP = [
     [("SVAcc", "4:23"), ("SVHealth", "23:42"), ("TGD", "42:61"), ("IODC", "61:80")],
     [("TransTime", "4:23"), ("FitInter", "23:42")]
 ]
-# A set of only the fields name
 G_FIELDS = set([field[0] for fields in G_FIELDS_MAP for field in fields])
 
-# Fields map (name, row location) for GALILEO satellites
+# Fields for GALILEO satellites
 E_FIELDS_MAP = [
-    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"), ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
+    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"),
+     ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
      ("SVClockBias", "23:42"), ("SVClockDrift", "42:61"), ("SVClockDriftRate", "61:80")],
     [("IODnav", "4:23"), ("Crs", "23:42"), ("DeltaN", "42:61"), ("M0", "61:80")],
     [("Cuc", "4:23"), ("e", "23:42"), ("Cus", "42:61"), ("sqrtA", "61:80")],
     [("TOE", "4:23"), ("Cic", "23:42"), ("Omega0", "42:61"), ("Cis", "61:80")],
     [("i0", "4:23"), ("Crc", "23:42"), ("Omega", "42:61"), ("OmegaDot", "61:80")],
     [("IDOT", "4:23"), ("GPSWeek", "23:42"), ("GALWeek", "42:61")],
-    [("SISA", "4:23"), ("SVHealth", "23:42"), ("BGDe5a", "42:61"), ("BGDe5b", "61:80")],
+    [("SISA", "4:23"), ("SVhealth", "23:42"), ("BGDe5a", "42:61"), ("BGDe5b", "61:80")],
     [("TransTime", "4:23")]
 ]
-# A set of only the fields name
 E_FIELDS = set([field[0] for fields in E_FIELDS_MAP for field in fields])
 
 
-# Fields map (name, row location) for GLONASS satellites
+# Fields for GLONASS satellites
 R_FIELDS_MAP = [
-    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"), ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
+    [("satellite", "0:3"), ("year", "4:8"), ("month", "9:11"), ("day", "12:14"),
+     ("hour", "15:17"), ("minute", "18:20"), ("second", "21:23"),
      ("SVClockBias", "23:42"), ("SVRelFreqBias", "42:61"), ("MessageFrameTime", "61:80")],
     [("X", "4:23"), ("dX", "23:42"), ("dX2", "42:61"), ("Health", "61:80")],
     [("Y", "4:23"), ("dY", "23:42"), ("dY2", "42:61"), ("FreqNum", "61:80")],
     [("Z", "4:23"), ("dZ", "23:42"), ("dZ2", "42:61"), ("AgeOpInfo", "61:80")]
 ]
-# A set of only the fields name
 R_FIELDS = set([field[0] for fields in R_FIELDS_MAP for field in fields])
 
 
-# All fields name
+# Fields for all satellites
 FIELDS = E_FIELDS.union(G_FIELDS, R_FIELDS)
 
 
-class Rinex3Reader:
-    """Handles reading `RINEX3` files.
-
+class Rinex3NavReader:
+    """
+    Handles reading `RINEX3` files.
+    
     * :attr:`lines` (list): List of lines to process.
-
+    
     """
 
     def __init__(self, lines):
         self.lines = lines
-        self._cursor = 0
+        self.cursor = 0
 
     @staticmethod
     def _eval(string):
         """Conversion from `RINEX` string representation of floats to python float.
-
+        
         Args:
             string (str): String to convert to float, int or str.
-
+        
         Returns:
             any: Evaluated string.
-
+        
         Examples:
             >>> _eval("string")
                 "string"
@@ -126,26 +119,72 @@ class Rinex3Reader:
             >>> _eval("  00010.d+12  ")
                 1.000000e+13
         """
-        try:
+        # Remove black spaces
+        string = string.strip()
+        # Check if the string is None
+        if string == "":
+            return None
+        # Check if the string is an integer
+        elif string.isdigit():
             return int(string)
-        except:
-            pass
+        # Try to convert to float
         try:
             string = re.sub("[Dd]", "e", string)
             return float(string)
         except:
             pass
+        # Else, return the stripped string
         return str(string)
+
+    #! Deprecated
+    @staticmethod
+    def format_line(line):
+        """Make sure the numbers / values are separated by at least one space.
+        
+        Args:
+            line (str): The line to format.
+        
+        Returns:
+            str: Formatted line.
+        
+        Examples:
+            >>> line = "G01 2018 10 12 00 00 00-9.926548227668E-05-4.888534022029E-12 0.000000000000E+00"
+            >>> format_line(line)
+                "G01 2018 10 12 00 00 00 -9.926548227668E-05 -4.888534022029E-12 0.000000000000E+00"
+        """
+        line = re.sub(f"[E\D][+\-][^-][^-][0-9\-]", lambda x: f"{x.group(0)[:4]} {x.group(0)[4]}", line)
+        line = re.sub(f"[0-9][0-9][-][0-9\.][0-9\.]", lambda x: f"{x.group(0)[:2]} {x.group(0)[2:]}", line)
+        return line
+
+    #! Deprecated
+    @staticmethod
+    def split_line(self, line):
+        """Split a line on black spaces.
+        
+        Args:
+            line (str): The line to split.
+        
+        Returns:
+            list: Elements of the line separated by a space.
+        
+        Examples:
+            >>> line = "G01 2018 10 12 00 00 00-9.926548227668E-05-4.888534022029E-12 0.000000000000E+00"
+            >>> format_line(line)
+                ["G01", "2018", "10", "12", "00", "00", "00", "-9.926548227668E-05", "-4.888534022029E-12", "0.000000000000E+00"]
+        """
+        line = self.format_line(line.strip())
+        parts = re.sub(' +', ' ', line).split(" ")
+        return parts
 
     def extract_fields(self, lines, fields_map):
         """Extract navigation data based on a fields map.
-
+        
         Args:
             lines (list): List of lines containing the data to extract. 
                 The number of lines should be the same as the number of row in ``fields_map``.
             fields_map (list): List of fields. Each row maps data from a line to its associated field.
                 A field a tuple, composed of a name and the column index/range (i.e. location in the line).
-
+        
         Returns:
             dict: The extracted data.
         """
@@ -190,7 +229,7 @@ class Rinex3Reader:
         """Read all the lines from a `RINEX3` file and return a ``pandas.DataFrame``.
         The indexes are based on the ``satellite`` id.
         The number of row corresponds to the number of records (i.e. navigation elements).
-
+        
         Returns:
             pandas.DataFrame
         """
@@ -199,8 +238,7 @@ class Rinex3Reader:
 
         # Construct a DataFrame
         df_data = defaultdict(list)
-        df_fields = FIELDS.difference(
-            {"year", "month", "day", "hour", "minute", "second"}).union({"session", "time"})
+        df_fields = FIELDS.difference({"year", "month", "day", "hour", "minute", "second"}).union({"session", "time"})
 
         previous_satellite = None
         session_counter = 1
@@ -226,14 +264,15 @@ class Rinex3Reader:
                 data["session"] = session_counter
 
                 # Make a datetime from the session's time
-                year = data.pop("year", 1970)
-                month = data.pop("month", 0)
-                day = data.pop("day", 0)
-                hour = data.pop("hour", 0)
-                minute = data.pop("minute", 0)
-                second = data.pop("second", 0)
+                year = data.pop("year", None)
+                month = data.pop("month", None)
+                day = data.pop("day", None)
+                hour = data.pop("hour", None)
+                minute = data.pop("minute", None)
+                second = data.pop("second", None)
                 data["time"] = gnsstime(year, month, day, hour, minute, second)
 
+                # And add the data to the ordered list of satellites
                 # Update the DataFrame data
                 for key, value in data.items():
                     df_data[key].append(value)
@@ -243,19 +282,17 @@ class Rinex3Reader:
                 for key in missing_fields:
                     df_data[key].append(None)
 
-                # Update the cursor to the current position
+                # Update the current state
                 self._cursor += num_fields
 
+            # If the line is blank, continue.
             else:
                 self._cursor += 1
 
         # Create the DataFrame
         df = pd.DataFrame(df_data)
         df = df.set_index(["satellite", "session"])
-
-        # Sort the columns
-        columns_indexes = list(df.columns)
-        columns_indexes.remove("time")
-        columns_indexes = ["time"] + sorted(columns_indexes)
-        df = df.reindex(columns_indexes, axis=1)
+        # Order the columns as: "time", other
+        columns = ["time"] + sorted([col for col in df.columns if col != "time"])
+        df = df.reindex(columns, axis=1)
         return df
