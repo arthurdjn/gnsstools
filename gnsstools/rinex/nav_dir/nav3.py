@@ -136,46 +136,6 @@ class Rinex3NavReader:
         # Else, return the stripped string
         return str(string)
 
-    #! Deprecated
-    @staticmethod
-    def format_line(line):
-        """Make sure the numbers / values are separated by at least one space.
-        
-        Args:
-            line (str): The line to format.
-        
-        Returns:
-            str: Formatted line.
-        
-        Examples:
-            >>> line = "G01 2018 10 12 00 00 00-9.926548227668E-05-4.888534022029E-12 0.000000000000E+00"
-            >>> format_line(line)
-                "G01 2018 10 12 00 00 00 -9.926548227668E-05 -4.888534022029E-12 0.000000000000E+00"
-        """
-        line = re.sub(f"[E\D][+\-][^-][^-][0-9\-]", lambda x: f"{x.group(0)[:4]} {x.group(0)[4]}", line)
-        line = re.sub(f"[0-9][0-9][-][0-9\.][0-9\.]", lambda x: f"{x.group(0)[:2]} {x.group(0)[2:]}", line)
-        return line
-
-    #! Deprecated
-    @staticmethod
-    def split_line(self, line):
-        """Split a line on black spaces.
-        
-        Args:
-            line (str): The line to split.
-        
-        Returns:
-            list: Elements of the line separated by a space.
-        
-        Examples:
-            >>> line = "G01 2018 10 12 00 00 00-9.926548227668E-05-4.888534022029E-12 0.000000000000E+00"
-            >>> format_line(line)
-                ["G01", "2018", "10", "12", "00", "00", "00", "-9.926548227668E-05", "-4.888534022029E-12", "0.000000000000E+00"]
-        """
-        line = self.format_line(line.strip())
-        parts = re.sub(' +', ' ', line).split(" ")
-        return parts
-
     def extract_fields(self, lines, fields_map):
         """Extract navigation data based on a fields map.
         

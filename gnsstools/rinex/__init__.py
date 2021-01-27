@@ -10,8 +10,9 @@
 # GNSS Tools
 from .utils import convert_georinex
 from gnsstools.logger import logger
+from gnsstools.rinex.header import RinexHeaderReader
+from .nav import RinexNavReader
 from .obs import Rinex3ObsReader, Rinex2ObsReader
-from .nav import Rinex3NavReader, Rinex2NavReader
 
 try:
     import georinex
@@ -46,19 +47,37 @@ def load(filename, *args, force=False, **kwargs):
         >>> # Load a SP3 file
         >>> df = rinex.load("COM20225_15M.SP3")
     """
-    header = None
+    with open(filename, "r") as f:
+        lines = f.read().split("\n")
 
+    reader = RinexHeaderReader(lines)
+    header = reader.read()
+    version = header.get("Version", 3.03)
+
+    df = None
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'o' reader are missing)
-    if filename.endswith(".rnx"):
-        pass
+    # Read Navigation data
+    if filename.endswith(".rnx") or filename.endswith("n") or filename.endswith("g"):
+        reader = RinexNavReader(lines)
+        df = reader.read()
+        df.attrs = header
+
+    # Read observation data
+    elif filename.endswith("o"):
+        if version < 3:
+            reader = Rinex2ObsReader(lines)
+            df = reader.read()
+            df.attrs = header
+        else:
+            ds = georinex(filename, *args, **kwargs)
+            df = convert_georinex(ds)
+
+    # Read SP3 data
     elif filename.endswith(".SP3"):
         pass
-    elif filename.endswith("o"):
-        pass
-    elif filename.endswith("g"):
-        pass
-    elif filename.endswith("n"):
-        pass
-    
-    ds = georinex(filename, *args, **kwargs)
-    return convert_georinex(ds)
+
+    else:
+        ds = georinex(filename, *args, **kwargs)
+        df = convert_georinex(ds)
+
+    return df

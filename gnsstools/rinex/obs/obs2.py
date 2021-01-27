@@ -20,20 +20,20 @@ from gnsstools import gnsstime
 
 class Rinex2ObsReader:
 
-    def __init__(self, lines):
+    def __init__(self, lines, cursor=0):
         self.lines = lines
         self._cursor = cursor
 
     @staticmethod
     def _eval(string):
         """Conversion from `RINEX` string representation of floats to python float.
-        
+
         Args:
             string (str): String to convert to float, int or str.
-        
+
         Returns:
             any: Evaluated string.
-        
+
         Examples:
             >>> _eval("string")
                 "string"
@@ -58,7 +58,7 @@ class Rinex2ObsReader:
             pass
         # Else, return the stripped string
         return str(string)
-        
+
     def _read_header(self):
         self.reader = 0
         fields = []
@@ -152,24 +152,27 @@ class Rinex2ObsReader:
         fields = self._read_header()
         self._cursor += 1
 
-        sat_counters = defaultdict(int)
-        df_data = defaultdict(list)
+        sat_data = defaultdict(list)
 
         while self._cursor < len(self.lines):
-            # If the line is blank, continue.
             if self.lines[self._cursor].strip() == "":
                 self._cursor += 1
                 continue
+
             time, satellites = self._read_sat()
             for satellite in satellites:
                 data = self._read_obs(fields)
                 data["time"] = time
                 data["satellite"] = satellite
-                sat_counters[satellite] += 1
-                data["session"] = sat_counters[satellite]
+                data["session"] = len(sat_data[satellite]) + 1
+                sat_data[satellite].append(data)
+
+        df_data = defaultdict(list)
+        for values in sat_data.values():
+            for data in values:
                 for key, value in data.items():
                     df_data[key].append(value)
-                    
+
         # Create the DataFrame
         df = pd.DataFrame(df_data)
         df = df.set_index(["satellite", "session"])
