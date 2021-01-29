@@ -14,53 +14,18 @@ import numpy as np
 import pandas as pd
 
 # GNSS Tools
+from gnsstools.rinex.rinex import RinexReader
 from gnsstools.logger import logger
 from gnsstools import gnsstime
 
 
-class Rinex2ObsReader:
+class Rinex2ObsReader(RinexReader):
 
-    def __init__(self, lines, cursor=0):
-        self.lines = lines
-        self._cursor = cursor
-
-    @staticmethod
-    def _eval(string):
-        """Conversion from `RINEX` string representation of floats to python float.
-
-        Args:
-            string (str): String to convert to float, int or str.
-
-        Returns:
-            any: Evaluated string.
-
-        Examples:
-            >>> _eval("string")
-                "string"
-            >>> _eval("   00013  ")
-                13
-            >>> _eval("  00010.d+12  ")
-                1.000000e+13
-        """
-        # Remove black spaces
-        string = string.strip()
-        # Check if the string is None
-        if string == "":
-            return None
-        # Check if the string is an integer
-        elif string.isdigit():
-            return int(string)
-        # Try to convert to float
-        try:
-            string = re.sub("[Dd]", "e", string)
-            return float(string)
-        except:
-            pass
-        # Else, return the stripped string
-        return str(string)
+    def __init__(self, lines):
+        super().__init__(lines)
 
     def _read_header(self):
-        self.reader = 0
+        self._cursor = 0
         fields = []
         line = self.lines[self._cursor]
 
@@ -76,16 +41,17 @@ class Rinex2ObsReader:
                 # Extract all fields / observations if multiple lines are used.
                 for _ in range(field_row):
                     # Look for the 9 potential fields / observations.
-                    for ifield in range(9):
-                        field = line[(ifield + 1) * 6:(ifield + 2) * 6]
-                        if not field.isspace():
-                            fields.append(field.strip())
+                    # Remove redundant spaces and split on " ".
+                    fields_string = re.sub("  +", " ", line[6:60].strip())
+                    fields_row = fields_string.split(" ")
+                    fields.extend(fields_row)
                     # Read the nex line.
                     self._cursor += 1
                     line = self.lines[self._cursor]
-            # If nothing was found, look for the next line.
-            self._cursor += 1
-            line = self.lines[self._cursor]
+            else:
+                # If nothing was found, look for the next line.
+                self._cursor += 1
+                line = self.lines[self._cursor]
 
         return fields
 

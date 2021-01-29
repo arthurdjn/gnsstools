@@ -53,31 +53,31 @@ def load(filename, *args, force=False, **kwargs):
     reader = RinexHeaderReader(lines)
     header = reader.read()
     version = header.get("Version", 3.03)
+    dtype = header["Type"]
+    print(header)
 
     df = None
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'o' reader are missing)
     # Read Navigation data
-    if filename.endswith(".rnx") or filename.endswith("n") or filename.endswith("g"):
+    if dtype == "N":
         reader = RinexNavReader(lines)
         df = reader.read()
         df.attrs = header
 
     # Read observation data
-    elif filename.endswith("o"):
+    elif dtype == "O":
         if version < 3:
             reader = Rinex2ObsReader(lines)
             df = reader.read()
             df.attrs = header
         else:
-            ds = georinex(filename, *args, **kwargs)
-            df = convert_georinex(ds)
+            reader = Rinex3ObsReader(lines)
+            df = reader.read()
+            df.attrs = header
 
     # Read SP3 data
     elif filename.endswith(".SP3"):
-        pass
-
-    else:
-        ds = georinex(filename, *args, **kwargs)
+        ds = georinex.load(filename, *args, **kwargs)
         df = convert_georinex(ds)
 
     return df

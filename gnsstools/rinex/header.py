@@ -16,10 +16,10 @@ import re
 from gnsstools.rinex.rinex import RinexReader
 
 
-DATA_TYPES = [
-    "NAV",
-    "OBS"
-]
+DATA_TYPES = {
+    "N": "NAVIGATION",
+    "O": "OBSERVATION"
+}
 
 
 SYSTEMS = {
@@ -55,16 +55,18 @@ class RinexHeaderReader(RinexReader):
         data["Version"] = self._eval(version)
 
         # Add the data type
-        for dtype in DATA_TYPES:
+        for dtype, name in DATA_TYPES.items():
             if dtype in dtype_string:
                 data["Type"] = dtype
+                data["TypeName"] = name
 
         # Add the system (default set to GPS: "G")
         # NOTE: If the loaded comes from ".*g" data, need to overwrite this section.
         # ? Change this part to look in the file extension, and update this part.
-        for system in SYSTEMS.keys():
+        for system, name in SYSTEMS.items():
             if system == system_string[0]:
                 data["System"] = system
+                data["SystemName"] = name
 
         return data
 
@@ -89,9 +91,6 @@ class RinexHeaderReader(RinexReader):
             elif category == "PGM / RUN BY / DATE":
                 data = self._read_pgm(line)
                 header.update(data)
-                
-            
 
             self._cursor += 1
-        print(header)
         return header
