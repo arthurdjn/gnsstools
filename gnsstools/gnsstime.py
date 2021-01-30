@@ -6,7 +6,7 @@
 
 
 # Basic imports
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 import math
 
@@ -64,7 +64,7 @@ class gnsstime(datetime):
     """
 
     def __new__(cls, year, month=None, day=None,
-                hour=0, minute=0, second=0, microsecond=0, **kwargs):
+                hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0, **kwargs):
 
         # Return None if the date is not valid
         if year is None or month is None or day is None:
@@ -96,7 +96,8 @@ class gnsstime(datetime):
         # Initialize from the parent method
         return datetime.__new__(cls, year, month=month, day=day,
                                 hour=hour, minute=minute, second=second,
-                                microsecond=microsecond, **kwargs)
+                                microsecond=microsecond, 
+                                tzinfo=tzinfo, fold=fold, **kwargs)
 
     @property
     def session(self):
@@ -104,7 +105,7 @@ class gnsstime(datetime):
 
     @property
     def mjd(self):
-        r"""Get the Modified Julian Date (MJD) relative to 2000-01-01T00:00:00 (UTC).
+        r"""Get the Modified Julian Day (MJD) relative to 2000-01-01T00:00:00 (UTC).
 
         Returns:
             float
@@ -115,7 +116,7 @@ class gnsstime(datetime):
 
     @property
     def jd(self):
-        r"""Get the Julian Date (JD) from a UTC datetime.
+        r"""Get the Julian Day (JD) from a UTC datetime.
 
         Returns:
             float
@@ -124,7 +125,7 @@ class gnsstime(datetime):
 
     @property
     def jd50(self):
-        r"""Get the Julian Date (JD) relative to 1950-01-01T00:00:00 (UTC).
+        r"""Get the Julian Day (JD) relative to 1950-01-01T00:00:00 (UTC).
 
         Returns:
             float
@@ -132,7 +133,7 @@ class gnsstime(datetime):
         return self.jd - JD_1950
 
     @property
-    def second0(self):
+    def seconds0(self):
         r"""Get the number of seconds from :math:`GPS_{origin}`, 
         defined at 1980-01-06T00:00:00 (UTC).
 
@@ -142,25 +143,25 @@ class gnsstime(datetime):
         return (self - DATETIME_GPS0).total_seconds()
 
     @property
-    def day0(self):
+    def days0(self):
         r"""Get the number of days from :math:`GPS_{origin}`, 
         defined at 1980-01-06T00:00:00 (UTC).
 
         Returns:
             int
         """
-        seconds = self.second0
+        seconds = self.seconds0
         return math.floor(seconds / 86_400.0)
 
     @property
-    def week0(self):
+    def weeks0(self):
         r"""Get the number of weeks from :math:`GPS_{origin}`, 
         defined at 1980-01-06T00:00:00 (UTC).
 
         Returns:
             int
         """
-        seconds = self.second0
+        seconds = self.seconds0
         return math.floor(seconds / (86_400.0 * 7))
 
     @property
@@ -217,7 +218,7 @@ class gnsstime(datetime):
             year (int): The year of the date.
             doy (int, optional): Day of year. Values must be between :math:`[1, 356]` depending on the year. 
                 Defaults to ``1``.
-            sod (int, optional): [description]. Values must be between :math:`[0, 86399]`.
+            sod (int, optional): Seconds of the day. Values must be between :math:`[0, 86399]`.
                 Defaults to 0.
 
         Returns:
@@ -247,26 +248,39 @@ class gnsstime(datetime):
 
     @classmethod
     def frommjd(cls, mjd):
-        """Generate a ``gnsstime`` object from a Modified Julian Date.
+        """Generate a ``gnsstime`` object from a Modified Julian Day.
 
         Args:
-            mjd (float): The Modified Julian Date (MJD).
+            mjd (float): The Modified Julian Day (MJD).
 
         Returns:
             gnsstime
         """
         # Seconds from 1970-01-01T00:00:00
         seconds = (mjd - MJD_2000) * 86_400 + SECONDS_2000
-        return gnsstime.fromtimestamp(seconds)
+        return gnsstime.fromtimestamp(seconds) - timedelta(hours=1)
 
     @classmethod
     def fromjd(cls, jd):
-        """Generate a ``gnsstime`` object from a Julian Date.
+        """Generate a ``gnsstime`` object from a Julian Day.
 
         Args:
-            mjd (float): The Julian Date (JD).
+            mjd (float): The Julian Day (JD).
 
         Returns:
             gnsstime
         """
         return gnsstime.frommjd(jd - JD)
+
+    @classmethod
+    def fromjd50(cls, jd50):
+        """Generate a ``gnsstime`` object from a Julian Day at 1950.
+
+        Args:
+            mjd (float): The Julian Day at 1950 (JD50).
+
+        Returns:
+            gnsstime
+        """
+        jd = jd50 + JD_1950
+        return gnsstime.fromjd(jd)

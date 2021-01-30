@@ -67,7 +67,7 @@ class Rinex3ObsReader(RinexReader):
         self._cursor += 1
 
         satellites = defaultdict(list)
-        
+
         while self._cursor < len(self.lines):
             line = self.lines[self._cursor]
             if line.strip() == "":
@@ -93,10 +93,10 @@ class Rinex3ObsReader(RinexReader):
                     data["Session"] = len(satellites[satellite]) + 1
                     # Save the data.
                     satellites[satellite].append(data)
-                    
+
             # Then, read next line (even if the line does not contain data)
             self._cursor += 1
-            
+
         # Create the DataFrame
         df_data = []
         for satellites, values in satellites.items():
@@ -107,4 +107,3 @@ class Rinex3ObsReader(RinexReader):
         columns = ["Date"] + sorted([col for col in df.columns if col != "Date"])
         df = df.reindex(columns, axis=1)
         return df
-

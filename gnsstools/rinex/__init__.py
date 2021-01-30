@@ -78,7 +78,7 @@ def load(filename, *args, force=False, **kwargs):
             df.attrs = header
 
     # Read SP3 data
-    elif filename.endswith(".SP3"):
+    elif filename.lower().endswith(".sp3"):
         reader = SP3Reader(lines)
         df = reader.read()
         df.attrs = header

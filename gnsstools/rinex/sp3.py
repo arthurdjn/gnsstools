@@ -96,10 +96,13 @@ class SP3Reader(RinexReader):
             # If the end is reached, break.
             if line.strip() == "EOF":
                 break
+            elif line.strip() == "":
+                self._cursor += 1
+                continue
             # Read the date for a set of observations.
             # NOTE: There should be `len(satellites_list)` observations.
             # However, the following will still work if it's not the case.
-            if line.startswith("*"):
+            elif line.startswith("*"):
                 line = self.lines[self._cursor]
                 year, month, day, hour, minute, second = line[3:7], line[8:10], line[11:13], line[14:16], line[17:19], line[20:31]
                 date = gnsstime(year, month, day, hour, minute, second)
@@ -113,6 +116,7 @@ class SP3Reader(RinexReader):
                     data = data = self._read_position()
                 elif line.startswith("V"):
                     data = self._read_velocity()
+                # TODO: add "EP" and "SV" data
                 else:
                     data = {}
                 # Add relevant information

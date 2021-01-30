@@ -56,7 +56,7 @@ class Rinex2ObsReader(RinexReader):
         return fields
 
     def _read_sat(self):
-        satellites = []
+        satellites_name = []
         line = self.lines[self._cursor]
         year, month, day = line[0:3], line[3:6], line[6:9]
         hour, minute, second = line[9:12], line[12:15], line[15:26]
@@ -69,7 +69,7 @@ class Rinex2ObsReader(RinexReader):
             return None, []
 
         sat_row = math.ceil(sat_num / 12)
-        while len(satellites) < sat_num:
+        while len(satellites_name) < sat_num:
             line = self.lines[self._cursor]
             satellites_sequence = line[32:68]
 
@@ -80,11 +80,11 @@ class Rinex2ObsReader(RinexReader):
                 if satellite != "":
                     # Replace blank space by 0 (e.g. "G 2" -> "G02")
                     satellite = re.sub(f"[A-Z][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), satellite)
-                    satellites.append(satellite)
+                    satellites_name.append(satellite)
             self._cursor += 1
 
         # Return the corresponding satellites at a specific time.
-        return time, satellites
+        return time, satellites_name
 
     def _read_obs(self, fields):
         # There ara maximum 5 fields per row.
@@ -118,31 +118,30 @@ class Rinex2ObsReader(RinexReader):
         fields = self._read_header()
         self._cursor += 1
 
-        sat_data = defaultdict(list)
+        satellites = defaultdict(list)
 
         while self._cursor < len(self.lines):
             if self.lines[self._cursor].strip() == "":
                 self._cursor += 1
                 continue
 
-            time, satellites = self._read_sat()
-            for satellite in satellites:
+            date, satellites_name = self._read_sat()
+            for satellite in satellites_name:
                 data = self._read_obs(fields)
-                data["time"] = time
-                data["satellite"] = satellite
-                data["session"] = len(sat_data[satellite]) + 1
-                sat_data[satellite].append(data)
-
-        df_data = defaultdict(list)
-        for values in sat_data.values():
-            for data in values:
-                for key, value in data.items():
-                    df_data[key].append(value)
+                data["Date"] = date
+                system, prn = self._eval(satellite[0]), self._eval(satellite[1:3])
+                data["System"] = system
+                data["PRN"] = prn
+                data["Session"] = len(satellites[satellite]) + 1
+                satellites[satellite].append(data)
 
         # Create the DataFrame
+        df_data = []
+        for satellites, values in satellites.items():
+            df_data.extend(values)
         df = pd.DataFrame(df_data)
-        df = df.set_index(["satellite", "session"])
-        # Order the columns as: "time", other
-        columns = ["time"] + sorted([col for col in df.columns if col != "time"])
+        # Make it pretty
+        df = df.set_index(["System", "PRN", "Session"])
+        columns = ["Date"] + sorted([col for col in df.columns if col != "Date"])
         df = df.reindex(columns, axis=1)
         return df
