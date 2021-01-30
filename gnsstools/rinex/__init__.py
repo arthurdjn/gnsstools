@@ -8,11 +8,14 @@
 # Basic imports
 
 # GNSS Tools
-from .utils import convert_georinex
 from gnsstools.logger import logger
-from gnsstools.rinex.header import RinexHeaderReader
+from .header import RinexHeaderReader
 from .nav import RinexNavReader
-from .obs import Rinex3ObsReader, Rinex2ObsReader
+from .obs2 import Rinex2ObsReader
+from .obs3 import Rinex3ObsReader
+from .sp3 import SP3Reader
+from .utils import convert_georinex
+
 
 try:
     import georinex
@@ -52,12 +55,11 @@ def load(filename, *args, force=False, **kwargs):
 
     reader = RinexHeaderReader(lines)
     header = reader.read()
-    version = header.get("Version", 3.03)
-    dtype = header["Type"]
-    print(header)
+    version = header.get("Version", 3.04)
+    dtype = header.get("Type", None)
 
     df = None
-    # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'o' reader are missing)
+    # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'crx' reader are missing)
     # Read Navigation data
     if dtype == "N":
         reader = RinexNavReader(lines)
@@ -77,6 +79,12 @@ def load(filename, *args, force=False, **kwargs):
 
     # Read SP3 data
     elif filename.endswith(".SP3"):
+        reader = SP3Reader(lines)
+        df = reader.read()
+        df.attrs = header
+    
+    # Read with GeoRinex package
+    else:
         ds = georinex.load(filename, *args, **kwargs)
         df = convert_georinex(ds)
 

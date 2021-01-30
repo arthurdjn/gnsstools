@@ -33,10 +33,6 @@ SYSTEMS = {
     "M": "MIXED"
 }
 
-RINEX_VERSION_TYPE_FIELDS = [("Version", "0:20"), ("Type", "20:40"), ("Constellation", "40:60")]
-# Constellation: BLANK OR G = GPS,  R = GLONASS,  E = GALILEO,  M = MIXED
-PGM_RUN_BY_DATE_FIELDS = [("PGM", "0:20"), ("RunBy", "20:40"), ("Date", "40:60")]
-COMMENT_FIELDS = [("Comment", "0:60")]
 CORR_TO_SYSTEM_TIME_FIELDS = [("year", "2:6"), ("month", "10:12"), ("day", "16:18"), ("Unknown", "22:39")]
 
 

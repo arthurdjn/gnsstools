@@ -58,4 +58,7 @@ class RinexReader(ABC):
     def _skip_header(self):
         while self._cursor < len(self.lines) and self.lines[self._cursor].strip() != "END OF HEADER":
             self._cursor += 1
-        
+
+    def _skip_blank_lines(self):
+        while self._cursor < len(self.lines) and self.lines[self._cursor].strip() == "":
+            self._cursor += 1
