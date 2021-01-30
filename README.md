@@ -170,7 +170,7 @@ date = gnsstime.frommjd(mjd)
 
 ## Rinex <a name="rinex"></a>
 
-Load GNSS navigation and observation data as a ``pandas.Data.frame``.
+Load GNSS navigation and observation data as a ``pandas.DataFrame``.
 
 The supported format are:
 - ``.**o`` : Rinex 2 Observation,
