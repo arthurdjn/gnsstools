@@ -147,7 +147,7 @@ jd = 2451545.0
 date = gnsstime.fromjd(jd)
 
 jd50 = 2433282.5
-date = gnsstime.fromjd50(jd)
+date = gnsstime.fromjd50(jd50)
 ```
 
 ### Modified Julian Day
@@ -200,6 +200,17 @@ df = rinex.load(filename)
 ```
 
 ![Rinex3 Nav](media/rinex3_nav.png)
+
+Once loaded, you select an ephemeris / satellite for a specific date with:
+
+```python
+from gnsstools import gnsstime
+
+date = gnsstime(2018, 10, 12, 0, 40, 15)
+satellite = df.select("G", 2, date)
+```
+
+If ``date`` is not part of the dataset ``df``, it will return the closest satellite.
 
 ### SP3
 

@@ -21,14 +21,7 @@ class GNSSProcess:
     """GNSS proccess class"""
 
     def __init__(self):
-        self.process = "spp"  # "DGNSS","phase"
-        self.freq = "C1"
-        self.X0 = np.zeros((3, 1))
-        self.iono = 'none'
-        self.nav = 'sp3'
-        self.const = 'GRE'
-        self.type = "o"
-
+        pass
 
     def spp(self, epoch, orbit):
         """Process epoch using spp.
@@ -49,7 +42,7 @@ class GNSSProcess:
         for satellite in epoch.satellites:
 
             logger.debug("Test if the satellite is part of the constellation.")
-            if not(re.search(satellite.const, self.const)):
+            if not(re.search(satellite.const, "GRE")):
                 continue
 
             observable = 'C1'
@@ -74,7 +67,7 @@ class GNSSProcess:
             #! From now we have a valid observation and a usable navigation             #
             #! message for a satellite `sat` at a specified epoch.                      #
             #! ------------------------------------------------------------------------ #
-            
+
             logger.debug(f"Compute time reception.")
             tr = epoch.tgps.mjd
             dt = (mjd - eph.mjd) * 86_400
@@ -88,7 +81,7 @@ class GNSSProcess:
 
             logger.debug(f"Compute clock drift.")
             dte = eph.alpha0 + eph.alpha1 * (tr - eph.TOC) + eph.alpha2 * (tr - eph.TOC) ** 2
-            dte /= 86400.0
+            dte /= 86_400
             logger.debug(f"dte={dte} [mjd]")
 
             logger.debug("Correct emitted time from clock drift.")

@@ -14,7 +14,7 @@ from gnsstools.const import c
 
 class Trilateration:
 
-    def __init__(self, sat_coords, distances, rec_coords=None, cdt=None, sigma=1):
+    def __init__(self, sat_coords, distances, rec_coords=None, cdt=0, sigma=1):
         # Satellites position
         nb_sat, nb_coords = sat_coords.shape
         assert nb_sat > 3 and nb_coords == 3, \
@@ -34,7 +34,7 @@ class Trilateration:
         self.rec_coords = rec_coords.flatten()
 
         # Time delay * celerity
-        self.cdt = cdt or 0
+        self.cdt = cdt
 
         # Parameters / variances
         self.sigma = sigma
