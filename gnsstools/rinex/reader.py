@@ -11,7 +11,7 @@ from abc import ABC
 import re
 
 
-class RinexReader(ABC):
+class ABCReader(ABC):
 
     def __init__(self, lines):
         super().__init__()

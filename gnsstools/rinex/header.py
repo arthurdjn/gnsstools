@@ -13,7 +13,7 @@ import math
 import re
 
 # GNSS Tools
-from gnsstools.rinex.rinex import RinexReader
+from .reader import ABCReader
 
 
 DATA_TYPES = {
@@ -36,7 +36,8 @@ SYSTEMS = {
 CORR_TO_SYSTEM_TIME_FIELDS = [("year", "2:6"), ("month", "10:12"), ("day", "16:18"), ("Unknown", "22:39")]
 
 
-class RinexHeaderReader(RinexReader):
+# TODO: Separate Rinex2 and Rinex3 header reader
+class RinexHeaderReader(ABCReader):
 
     def __init__(self, lines):
         super().__init__(lines)
@@ -52,7 +53,7 @@ class RinexHeaderReader(RinexReader):
 
         # Add the data type
         for dtype, name in DATA_TYPES.items():
-            if dtype in dtype_string:
+            if name[:3] in dtype_string:
                 data["Type"] = dtype
                 data["TypeName"] = name
 
@@ -63,6 +64,14 @@ class RinexHeaderReader(RinexReader):
             if system == system_string[0]:
                 data["System"] = system
                 data["SystemName"] = name
+            # For Rinex2 support
+            elif name in dtype_string:
+                print(dtype_string, system, name)
+                data["System"] = system
+                data["SystemName"] = name
+        # If nothing was found
+        data["System"] = data.get("System", None) or "G"
+        data["SystemName"] = data.get("SystemName", None) or "GPS"
 
         return data
 

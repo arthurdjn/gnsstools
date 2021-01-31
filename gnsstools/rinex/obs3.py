@@ -13,11 +13,12 @@ import math
 import pandas as pd
 
 # GNSS Tools
+from .reader import ABCReader
+from .datasets import ObservationDataFrame
 from gnsstools import gnsstime
-from gnsstools.rinex.rinex import RinexReader
 
 
-class Rinex3ObsReader(RinexReader):
+class Rinex3ObsReader(ABCReader):
 
     def __init__(self, lines):
         super().__init__(lines)
@@ -73,7 +74,7 @@ class Rinex3ObsReader(RinexReader):
             if line.strip() == "":
                 self._cursor += 1
                 continue
-            if line[0] == ">":
+            elif line[0] == ">":
                 # Read the date
                 year, month, day, hour, minute, second = line[2:6], line[7:9], line[10:12], line[13:15], line[16:18], line[19:29]
                 date = gnsstime(year, month, day, hour, minute, second)
@@ -103,7 +104,7 @@ class Rinex3ObsReader(RinexReader):
             df_data.extend(values)
         df = pd.DataFrame(df_data)
         # Make it pretty
-        df = df.set_index(["System", "PRN", "Session"])
-        columns = ["Date"] + sorted([col for col in df.columns if col != "Date"])
+        df = df.set_index(["System", "PRN", "Date"])
+        columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
-        return df
+        return ObservationDataFrame(df)

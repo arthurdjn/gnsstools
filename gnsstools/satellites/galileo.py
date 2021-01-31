@@ -10,5 +10,5 @@ from .satellite import Satellite
 
 class GALILEO(Satellite):
     
-    def __init__(self):
+    def __init__(self, ):
         super().__init__()

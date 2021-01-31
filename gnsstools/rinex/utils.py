@@ -23,8 +23,6 @@ def convert_georinex(xarray, convert=True):
         return df
 
     df_data = defaultdict(list)
-    previous_prn = None
-    session_cursor = 1
     variable_names = xarray.keys()
 
     for sv_index, sv in enumerate(xarray.sv):
@@ -54,29 +52,19 @@ def convert_georinex(xarray, convert=True):
                 values = points
             df_data[variable_name].extend(values)
 
-        # Create a new variable_name for "time"
-        time = list(np.array(xarray.time[time_indexes]))
-        df_data["time"].extend(time)
+        # Create a new variable_name for "date"
+        date = list(np.array(xarray.time[time_indexes]))
+        df_data["Date"].extend(date)
         # Create a new variable_name for "satellite"
-        prn = sv.item().split("_")[0]
-        df_data["satellite"].extend([prn] * len(time_indexes))
-        # Create a new variable_name for the "session"
-        sessions_indexes = range(session_cursor, len(time_indexes) + session_cursor)
-        df_data["session"].extend(list(sessions_indexes))
+        satellite = sv.item().split("_")[0]
+        system, prn = satellite[0], int(satellite[1:3])
+        df_data["System"].extend([system] * len(time_indexes))
+        df_data["PRN"].extend([prn] * len(time_indexes))
 
-        # Update for next time
-        if prn == previous_prn:
-            session_cursor += len(time_indexes)
-        else:
-            session_cursor = 1
-        previous_prn = prn
-
-    # Create the DataFrame, with multiple indexes (PRN, Session)
-    df = pd.DataFrame(df_data)
-    df = df.set_index(["satellite", "session"])
-    # Order the columns as: "time", other
-    columns = ["time"] + sorted([col for col in df.columns if col != "time"])
-    df = df.reindex(columns, axis=1)
-    # Attach the metadata (attributes) to the DataFrame to not loose any information
-    df.attrs = xarray.attrs
-    return df
+        # Create the DataFrame
+        df = pd.DataFrame(df_data)
+        # Make it pretty
+        df = df.set_index(["System", "PRN", "Date"])
+        columns = sorted([col for col in df.columns])
+        df = df.reindex(columns, axis=1)
+        return df

@@ -8,13 +8,31 @@
 # Basic imports
 from abc import ABC
 
+# GNSS Tools
+from gnsstools.gnsstime import to_gnsstime, gnsstime
+
 
 class Satellite(ABC):
-    """GNSS nav element class"""
-    def __init__(self):
-        self.tgps = gpst.gpstime()
-        self.omega0 = None
+    def __init__(self, prn, date):
+        print(date)
+        self._prn = prn
+        self._date = to_gnsstime(date)
 
     @property
-    def const(self):
-        raise NotImplemented
+    def system(self):
+        raise AttributeError("This attribute was not set. Please open an issue.")
+
+    @property
+    def prn(self):
+        return self._prn
+
+    @property
+    def date(self):
+        return self._date
+
+    @classmethod
+    def from_dataframe(cls, *args, **kwargs):
+        raise NotImplementedError("This method is currently not available. Make a PR if you wish to update gnsstools.")
+
+    def position(self, *args, **kwargs):
+        raise NotImplementedError("This method is currently not available. Make a PR if you wish to update gnsstools.")

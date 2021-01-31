@@ -57,12 +57,19 @@ def load(filename, *args, force=False, **kwargs):
     header = reader.read()
     version = header.get("Version", 3.04)
     dtype = header.get("Type", None)
-
+    
+    print(header)
+    
     df = None
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'crx' reader are missing)
     # Read Navigation data
     if dtype == "N":
-        reader = RinexNavReader(lines)
+        system = None
+        if filename.endswith("n"):
+            system = "G"
+        elif filename.endswith("g"):
+            system = "R"
+        reader = RinexNavReader(lines, system=system)
         df = reader.read()
         df.attrs = header
 

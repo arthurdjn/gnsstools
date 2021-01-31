@@ -7,8 +7,8 @@
 
 
 r"""
-This module handles reading `RINEX3` files. 
-It was only tested with `RINEX` version 3.03, but should works for any 3. versions.
+This module handles reading `RINEX` files. 
+It was only tested with `RINEX` version 2.10 and 3.03, but should works for any versions.
 """
 
 
@@ -18,7 +18,8 @@ from collections import defaultdict
 import pandas as pd
 
 # gnsstime
-from .rinex import RinexReader
+from .reader import ABCReader
+from .datasets import NavigationDataFrame
 from gnsstools import gnsstime
 
 
@@ -27,7 +28,8 @@ __all__ = [
 ]
 
 
-class RinexNavReader(RinexReader):
+# TODO: Separate Rinex3 and Rinex2 navigation reader (not much to change: only `read` method for prn.)
+class RinexNavReader(ABCReader):
     """
     Handles reading `RINEX3` files.
 
@@ -35,8 +37,9 @@ class RinexNavReader(RinexReader):
 
     """
 
-    def __init__(self, lines):
+    def __init__(self, lines, system=None):
         super().__init__(lines)
+        self.system = system
 
     def _extract_g_fields(self):
         lines = self.lines[self._cursor:self._cursor+8]
@@ -147,8 +150,8 @@ class RinexNavReader(RinexReader):
             "TransTime": self._eval(lines[7][4:23]),
         }
 
-    def read(self, system=None):
-        """Read all the lines from a `RINEX3` file and return a ``pandas.DataFrame``.
+    def read(self):
+        """Read all the lines from a `RINEX` file and return a ``pandas.DataFrame``.
         The indexes are based on the ``satellite`` id.
         The number of row corresponds to the number of records (i.e. navigation elements).
 
@@ -175,7 +178,7 @@ class RinexNavReader(RinexReader):
             # Find the associated satellite system
             # Create the satellite name (e.g. " 03" - > "G03", "G 2" -> "G02")
             if line[0] == " " or line[0].isdigit():
-                system_ = system or "G"
+                system_ = self.system or "G"
                 prn = self._eval(line[:3])
                 satellite = f"{system_}{prn}"
             else:
@@ -209,7 +212,6 @@ class RinexNavReader(RinexReader):
             data["Date"] = gnsstime(year, month, day, hour, minute, second)
 
             # Count PRN and save the data
-            data["Session"] = len(satellites[satellite]) + 1
             data["System"] = system_
             data["PRN"] = prn
             satellites[satellite].append(data)
@@ -220,7 +222,7 @@ class RinexNavReader(RinexReader):
             df_data.extend(values)
         df = pd.DataFrame(df_data)
         # Make it pretty
-        df = df.set_index(["System", "PRN", "Session"])
-        columns = ["Date"] + sorted([col for col in df.columns if col != "Date"])
+        df = df.set_index(["System", "PRN", "Date"])
+        columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
-        return df
+        return NavigationDataFrame(df)

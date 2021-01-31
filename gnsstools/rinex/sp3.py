@@ -15,12 +15,13 @@ import pandas as pd
 from shapely.geometry import Point
 
 # GNSS Tools
-from gnsstools.rinex.rinex import RinexReader
+from .reader import ABCReader
+from .datasets import PositionDataFrame
 from gnsstools.logger import logger
 from gnsstools import gnsstime
 
 
-class SP3Reader(RinexReader):
+class SP3Reader(ABCReader):
 
     def __init__(self, lines):
         super().__init__(lines)
@@ -135,7 +136,7 @@ class SP3Reader(RinexReader):
             df_data.extend(values)
         df = pd.DataFrame(df_data)
         # Make it pretty
-        df = df.set_index(["System", "PRN", "Session"])
-        columns = ["Date"] + sorted([col for col in df.columns if col != "Date"])
+        df = df.set_index(["System", "PRN", "Date"])
+        columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
-        return df
+        return PositionDataFrame(df)

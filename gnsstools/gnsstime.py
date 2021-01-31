@@ -9,6 +9,8 @@
 from datetime import datetime, timedelta
 import calendar
 import math
+import numpy as np
+import pandas as pd
 
 
 __all__ = [
@@ -21,12 +23,32 @@ DATETIME_GPS0 = datetime(1980, 1, 6, 0, 0, 0, 0)
 DATETIME_2000 = datetime(2000, 1, 1, 0, 0, 0, 0)
 SECONDS_2000 = 946_728_000.0  # Seconds from 1970-01-01T00:00:00 to 2000-01-01T00:00:00 (UTC)
 MJD_2000 = 51_544.5   # Modified Julian Day at 2000-01-01T00:00:00 (UTC)
-JD = 2_400_000.5  # Julian Day
+JD = 2_400_000.5  # Julian Day starting at noon on Monday, January 1, 4713 BC
 JD_2000 = 2_451_545.0  # Julian Day at 2000-01-01T00:00:00 (UTC)
 JD_1950 = 2_433_282.50  # Julian Day at 1950-01-01T00:00:00 (UTC)
 SESSIONS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
             'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', '0']
 
+
+def to_gnsstime(element):
+
+    if isinstance(element, (datetime, gnsstime)):
+        pass
+
+    elif isinstance(element, pd.Timestamp):
+        element = pd.to_datetime(element)
+    
+    elif isinstance(element, np.datetime64):
+        element = datetime.utcfromtimestamp(element.astype('O') / 1e9)
+
+    else:
+        raise ValueError(f"The element to be converted to gnsstime is unknown. Got type {type(element)}.")
+
+    return gnsstime(year=element.year, month=element.month, day=element.day,
+                    hour=element.hour, minute=element.minute, second=element.second,
+                    microsecond=element.microsecond, tzinfo=element.tzinfo,
+                    fold=element.fold)
+    
 
 class gnsstime(datetime):
     r"""Defines GNSS time, providing built-in functions to fasten date conversion.
@@ -96,7 +118,7 @@ class gnsstime(datetime):
         # Initialize from the parent method
         return datetime.__new__(cls, year, month=month, day=day,
                                 hour=hour, minute=minute, second=second,
-                                microsecond=microsecond, 
+                                microsecond=microsecond,
                                 tzinfo=tzinfo, fold=fold, **kwargs)
 
     @property
@@ -258,7 +280,7 @@ class gnsstime(datetime):
         """
         # Seconds from 1970-01-01T00:00:00
         seconds = (mjd - MJD_2000) * 86_400 + SECONDS_2000
-        return gnsstime.fromtimestamp(seconds) - timedelta(hours=1)
+        return gnsstime.utcfromtimestamp(seconds)
 
     @classmethod
     def fromjd(cls, jd):
@@ -284,3 +306,15 @@ class gnsstime(datetime):
         """
         jd = jd50 + JD_1950
         return gnsstime.fromjd(jd)
+
+    @classmethod
+    def fromdatetime64(cls, datetime64):
+        """Generate a ``gnsstime`` object from a numpy datetime64.
+
+        Args:
+            mjd (float): The numpy datetime.
+
+        Returns:
+            gnsstime
+        """
+        return gnsstime.utcfromtimestamp(datetime64.astype('O') / 1e9)

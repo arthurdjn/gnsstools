@@ -53,14 +53,13 @@ class Orbit(orbits.orbit):
 
         logger.debug("Solve Kepler equation with an iterative method.")
         E0 = M
-        E1 = M + eph.e * np.sin(E0)
+        E = M + eph.e * np.sin(E0)
         max_steps = 100
-        while np.abs(E0 - E1) > 1e-9 and max_steps > 0:
-            E0 = E1
-            E1 = M + eph.e * np.sin(E0)
+        while np.abs(E0 - E) > 1e-9 and max_steps > 0:
+            E0 = E
+            E = M + eph.e * np.sin(E0)
             max_steps -= 1
-        E = E1
-        logger.debug(f"E={E}, precision={np.abs(E0-E1)}, steps={100 - max_steps}")
+        logger.debug(f"E={E}, precision={np.abs(E0-E)}, steps={100 - max_steps}")
 
         logger.debug("Compute satellite true anomaly.")
         v_ = np.sqrt((1 + eph.e) / (1 - eph.e)) * np.tan(E/2)
