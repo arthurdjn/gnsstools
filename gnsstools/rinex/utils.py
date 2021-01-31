@@ -67,4 +67,5 @@ def convert_georinex(xarray, convert=True):
         df = df.set_index(["System", "PRN", "Date"])
         columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
+        df = df.sort_index()
         return df

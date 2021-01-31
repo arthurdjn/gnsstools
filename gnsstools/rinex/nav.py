@@ -220,9 +220,10 @@ class RinexNavReader(ABCReader):
         df_data = []
         for satellites, values in satellites.items():
             df_data.extend(values)
-        df = pd.DataFrame(df_data)
+        df = NavigationDataFrame(df_data)
         # Make it pretty
         df = df.set_index(["System", "PRN", "Date"])
         columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
-        return NavigationDataFrame(df)
+        df = df.sort_index()
+        return df

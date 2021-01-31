@@ -18,12 +18,21 @@ from gnsstools.utils import camel2snake
 
 class NavigationDataFrame(pd.DataFrame):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def _constructor(self):
+        return NavigationDataFrame
 
-    def select(self, system=None, prn=None, date=None):
+    def select(self, system=None, prn=None, date=None, ignore_offset=False):
 
-        # Search for subsets in the dataframe.
+        # Make sure the arguments are available.
+        systems = np.unique(self.index.get_level_values('System'))
+        prns = np.unique(self.index.get_level_values('PRN'))
+        assert system in systems, f"The provided system {system} was not found in the dataset. " \
+                                  f"Available systems are {', '.join(systems)}."
+        assert prn in prns, f"The provided PRN {prn} was not found in the dataset. " \
+                            f"Available PRNs are {', '.join(prns.astype('str'))}."
+
+        # Search for subsets in the dataframe (if valid arguments are provided).
         if prn is None:
             sub_df = self.loc[system]
         else:
@@ -35,15 +44,21 @@ class NavigationDataFrame(pd.DataFrame):
             date_ = to_gnsstime(date_)
             deltas.append(np.abs((date - date_).total_seconds()))
         offset = np.min(deltas)
+        # Find the indexes of the sub dataframe
+        if system is not None and prn is None:
+            prn, date = sub_df.index[np.argmin(deltas)]
+        elif system is not None and prn is not None:
+            date = sub_df.index[np.argmin(deltas)]
         # The time coverage should be lower than 2 hours.
-        if offset / 3600 > 2:
-            return None
-        # Get the data (remove NaNs).
-        system, prn, date = self.index[np.argmin(deltas)]
-        data = self.loc[system, prn, date].dropna()
-
-        # Select the data corresponding to the element at `index`.
-        arguments = {"prn": int(prn), "date": to_gnsstime(date)}
+        if not ignore_offset:
+            assert offset / 3600 < 2, f"The provided date does not overlap with dates from {system}{prn} satellite. " \
+                                      f"There must be a time delta of 2h at least. " \
+                                      f"Got a time delta of {offset / 3600:.2f} hours. " \
+                                      f"The closest date is {date}. You can ignore this behavior with `ignore_offset=True`."
+        # Get the row and drop NaNs
+        data = self.loc[system, prn, date].squeeze()
+        data = data.dropna()
+        arguments = {"prn": int(prn), "toc": to_gnsstime(date)}
         for arg, value in zip(data.index, data.values):
             arguments[camel2snake(arg)] = value
 
@@ -59,8 +74,9 @@ class NavigationDataFrame(pd.DataFrame):
 
 class ObservationDataFrame(pd.DataFrame):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def _constructor(self):
+        return ObservationDataFrame
 
     def select(self):
         raise NotImplementedError
@@ -68,8 +84,9 @@ class ObservationDataFrame(pd.DataFrame):
 
 class PositionDataFrame(pd.DataFrame):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def _constructor(self):
+        return PositionDataFrame
 
     def select(self):
         raise NotImplementedError

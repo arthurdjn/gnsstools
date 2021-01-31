@@ -13,26 +13,32 @@ from gnsstools.gnsstime import to_gnsstime, gnsstime
 
 
 class Satellite(ABC):
-    def __init__(self, prn, date):
-        print(date)
+    def __init__(self, prn, toc):
         self._prn = prn
-        self._date = to_gnsstime(date)
+        self._toc = to_gnsstime(toc)
 
     @property
     def system(self):
-        raise AttributeError("This attribute was not set. Please open an issue.")
+        return None
 
     @property
     def prn(self):
         return self._prn
 
     @property
-    def date(self):
-        return self._date
-
-    @classmethod
-    def from_dataframe(cls, *args, **kwargs):
-        raise NotImplementedError("This method is currently not available. Make a PR if you wish to update gnsstools.")
+    def toc(self):
+        return self._toc
 
     def position(self, *args, **kwargs):
         raise NotImplementedError("This method is currently not available. Make a PR if you wish to update gnsstools.")
+
+    def __repr__(self):
+        rep = f"{self.__class__.__name__}("
+        rep += f"\n  system: {self.system}"
+        rep += f"\n  prn: {self.prn}"
+        rep == f"\n  toc: {self.toc}"
+        for attr, value in self.__dict__.items():
+            if attr[0] != "_":
+                rep += f"\n  {attr}: {value:.6e}"
+        rep += "\n)"
+        return rep
