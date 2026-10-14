@@ -6,7 +6,6 @@ import pytest
 
 from gnsstools import gnsstime, rinex
 from gnsstools.rinex.datasets import NavigationDataFrame, ObservationDataFrame, PositionDataFrame
-from gnsstools.rinex.sp3 import SP3Reader
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -17,6 +16,7 @@ OBS2 = DATA_DIR / "edf1285b.18o"
 OBS3 = DATA_DIR / "ENSG00FRA_R_20182850100_01H_15S_MO.rnx"
 SP3 = DATA_DIR / "COM20225_15M.SP3"
 SP3_MGEX = DATA_DIR / "com20225.eph"
+SP3_VELOCITY = DATA_DIR / "COM20225_PV.SP3"
 
 
 def record(df: pd.DataFrame, key: tuple[str, int, gnsstime]) -> "pd.Series[Any]":
@@ -58,4 +58,6 @@ def sp3() -> PositionDataFrame:
 
 @pytest.fixture(scope="session")
 def sp3_mgex() -> PositionDataFrame:
-    return SP3Reader(SP3_MGEX.read_text().split("\n")).read()
+    df = rinex.load(SP3_MGEX)
+    assert isinstance(df, PositionDataFrame)
+    return df

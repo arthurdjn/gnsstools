@@ -1,4 +1,6 @@
-import sys
+import copy
+import pickle
+from collections.abc import Callable
 from datetime import datetime
 
 import numpy as np
@@ -35,7 +37,6 @@ def test_parses_strings_and_two_digit_years(args: DateArgs) -> None:
     assert gnsstime(*args) == datetime(2018, 10, 12, 1, 0, 15)
 
 
-@pytest.mark.xfail(reason="Two-digit years from 80 to 99 are not mapped to 1980-1999")
 def test_two_digit_years_of_the_previous_century() -> None:
     assert gnsstime(98, 1, 1).year == 1998
 
@@ -44,14 +45,35 @@ def test_fractional_seconds_become_microseconds() -> None:
     assert gnsstime(2018, 1, 1, 0, 0, 5.5) == datetime(2018, 1, 1, 0, 0, 5, 500_000)
 
 
-@pytest.mark.xfail(reason="Fractional seconds are floored: 1.001 s gives 999 microseconds")
 def test_fractional_seconds_are_rounded() -> None:
     assert gnsstime(2018, 1, 1, 0, 0, 1.001).microsecond == 1_000
 
 
-@pytest.mark.xfail(reason="Fractional days, hours and minutes are truncated instead of carried, unlike the README says")
 def test_fractional_hours_are_carried() -> None:
     assert gnsstime(2018, 1, 1, 12.5) == datetime(2018, 1, 1, 12, 30)
+    assert gnsstime(2018, 1, 2.5) == datetime(2018, 1, 2, 12)
+    assert gnsstime(2018, 1, 1, 5.933, 4.36, 33.231) == datetime(2018, 1, 1, 6, 0, 53, 631_000)
+
+
+def test_rounding_carries_to_the_next_day() -> None:
+    assert gnsstime(2018, 12, 31, 23, 59, "59.9999999") == datetime(2019, 1, 1)
+
+
+def test_invalid_dates() -> None:
+    with pytest.raises(TypeError, match="year, a month and a day"):
+        gnsstime(2018)
+    with pytest.raises(ValueError, match="hour"):
+        gnsstime(2018, 1, 1, 24)
+    with pytest.raises(ValueError, match="day"):
+        gnsstime(2018, 2, 29)
+
+
+@pytest.mark.parametrize("copy_", [copy.copy, copy.deepcopy, lambda date: pickle.loads(pickle.dumps(date))])
+def test_copy_and_pickle(copy_: Callable[[gnsstime], gnsstime]) -> None:
+    date = gnsstime(2018, 10, 12, 1, 0, 15.25)
+    copied = copy_(date)
+    assert type(copied) is gnsstime
+    assert copied == date
 
 
 def test_julian_days_of_reference_epochs() -> None:
@@ -68,12 +90,6 @@ def test_round_trips_through_julian_days(date: gnsstime) -> None:
     assert isinstance(gnsstime.frommjd(date.mjd), gnsstime)
 
 
-@pytest.mark.xfail(
-    sys.platform == "win32",
-    raises=OSError,
-    reason="frommjd goes through utcfromtimestamp, which rejects dates before 1970 on Windows",
-    strict=False,
-)
 def test_from_julian_day_before_1970() -> None:
     assert gnsstime.fromjd50(0.0) == datetime(1950, 1, 1)
 
@@ -89,7 +105,6 @@ def test_second_of_week_matches_sp3_header() -> None:
     assert gnsstime(2018, 10, 12).sow == GPS_SOW
 
 
-@pytest.mark.xfail(reason="sow is derived from the day of year modulo 7, not from the start of the GPS week (Sunday)")
 @pytest.mark.parametrize(
     ("date", "sow"),
     [(gnsstime(2021, 1, 1), 5 * 86_400.0), (gnsstime(2025, 6, 1, 0, 0, 30), 30.0)],
@@ -113,7 +128,6 @@ def test_from_day_of_year() -> None:
     assert gnsstime.fromdoy(2020, 366) == datetime(2020, 12, 31)
 
 
-@pytest.mark.xfail(reason="fromdoy drops the fractional part of the second of day")
 def test_from_day_of_year_keeps_microseconds() -> None:
     assert gnsstime.fromdoy(2018, 285, 3_615.5) == datetime(2018, 10, 12, 1, 0, 15, 500_000)
 
@@ -132,7 +146,6 @@ def test_to_gnsstime(value: object) -> None:
     assert date == datetime(2018, 10, 12, 1, 0, 15)
 
 
-@pytest.mark.xfail(raises=TypeError, reason="Only nanosecond datetime64 values are converted")
 def test_to_gnsstime_from_microsecond_datetime64() -> None:
     assert to_gnsstime(np.datetime64("2018-10-12T01:00:15.000000")) == datetime(2018, 10, 12, 1, 0, 15)
 
@@ -140,3 +153,5 @@ def test_to_gnsstime_from_microsecond_datetime64() -> None:
 def test_to_gnsstime_rejects_unknown_types() -> None:
     with pytest.raises(ValueError, match="unknown"):
         to_gnsstime("2018-10-12")
+    with pytest.raises(ValueError, match="not a valid date"):
+        to_gnsstime(np.datetime64("NaT", "ns"))

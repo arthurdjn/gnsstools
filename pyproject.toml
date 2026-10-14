@@ -93,6 +93,7 @@ testpaths = ["tests"]
 addopts = ["--strict-markers", "--strict-config", "-ra"]
 # Known bugs are marked xfail: a fix makes them pass, and a strict xfail then fails until the marker is removed.
 xfail_strict = true
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 source = ["gnsstools"]
