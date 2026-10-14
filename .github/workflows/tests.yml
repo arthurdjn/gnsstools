@@ -1,0 +1,96 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  tests:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: macos-latest
+            python-version: "3.14"
+          - os: windows-latest
+            python-version: "3.14"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the package, its extras and the development tools
+        run: uv sync --all-extras --locked
+
+      - name: Test with python ${{ matrix.python-version }}
+        run: uv run --no-sync pytest --cov --cov-report=term
+
+  # The lower bounds in pyproject.toml are only a promise if something installs them.
+  lowest:
+    name: Lowest dependencies on Python 3.10
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.10"
+
+      - name: Test with the lowest direct dependencies
+        run: uv run --isolated --resolution lowest-direct --all-extras --group dev pytest
+
+  # Build the distributions and import from a bare wheel install (no dev group, no extras), so an undeclared
+  # runtime dependency or a file missing from the wheel fails here instead of on a user's machine.
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.14"
+
+      - name: Build the sdist and the wheel
+        run: uv build
+
+      - name: Check the distributions
+        run: uvx twine check --strict dist/*
+
+      - name: Import from a bare wheel install
+        run: |
+          uv venv .venv-bare
+          VIRTUAL_ENV=$PWD/.venv-bare uv pip install dist/*.whl
+          .venv-bare/bin/python -c "import gnsstools; from gnsstools import rinex, satellites; print(gnsstools.__version__)"
