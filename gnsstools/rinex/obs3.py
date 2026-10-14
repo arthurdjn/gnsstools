@@ -53,10 +53,10 @@ class Rinex3ObsReader(ABCReader):
     def _read_obs(self, fields: list[str]) -> Record:
         data: Record = {}
         line = self.lines[self._cursor]
+        # After the satellite (3 characters), each observation takes 14 characters (F14.3), followed by the loss of
+        # lock indicator and the signal strength (1 digit each), which are not read.
         for i, field in enumerate(fields):
-            value = line[4 + i + 15 * i : 4 + i + 15 * (i + 1)]
-            value = re.sub(r"[0-9][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), value)
-            data[field] = self._eval(value)
+            data[field] = self._eval(line[3 + 16 * i : 3 + 16 * i + 14])
         return data
 
     def read(self) -> ObservationDataFrame:
@@ -83,7 +83,7 @@ class Rinex3ObsReader(ABCReader):
                 )
                 date = gnsstime(year, month, day, hour, minute, second)
                 # Read the number associated to this date. Loop and extract their data.
-                sat_num = int(line[33:35])
+                sat_num = int(line[32:35])
                 for _ in range(sat_num):
                     self._cursor += 1
                     line = self.lines[self._cursor]
