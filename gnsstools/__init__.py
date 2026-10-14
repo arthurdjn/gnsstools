@@ -5,7 +5,7 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 # Basic imports
-import os
+from importlib.metadata import version as _version
 
 from .gnsstime import gnsstime
 from .trilateration import Trilateration
@@ -18,5 +18,4 @@ __all__ = [
 ]
 
 
-ROOT = os.path.abspath(os.path.dirname(__file__))
-__version__ = open(os.path.join(ROOT, "VERSION.md")).read().strip()
+__version__ = _version("gnsstools")
