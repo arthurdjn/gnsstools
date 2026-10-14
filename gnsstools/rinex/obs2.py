@@ -15,16 +15,16 @@ import numpy as np
 from gnsstools import gnsstime
 
 from .datasets import ObservationDataFrame
-from .reader import ABCReader
+from .reader import ABCReader, Record
 
 
 class Rinex2ObsReader(ABCReader):
-    def __init__(self, lines):
+    def __init__(self, lines: list[str]) -> None:
         super().__init__(lines)
 
-    def _read_header(self):
+    def _read_header(self) -> list[str]:
         self._cursor = 0
-        fields = []
+        fields: list[str] = []
         line = self.lines[self._cursor]
 
         # Look for the obsearvations. Break if the header is passed.
@@ -53,8 +53,8 @@ class Rinex2ObsReader(ABCReader):
 
         return fields
 
-    def _read_sat(self):
-        satellites_name = []
+    def _read_sat(self) -> tuple[gnsstime, list[str]]:
+        satellites_name: list[str] = []
         line = self.lines[self._cursor]
         year, month, day = line[0:3], line[3:6], line[6:9]
         hour, minute, second = line[9:12], line[12:15], line[15:26]
@@ -80,10 +80,10 @@ class Rinex2ObsReader(ABCReader):
         # Return the corresponding satellites at a specific date.
         return date, satellites_name
 
-    def _read_obs(self, fields):
+    def _read_obs(self, fields: list[str]) -> Record:
         # There ara maximum 5 fields per row.
         field_row = math.ceil(len(fields) / 5)
-        data = {field: np.nan for field in fields}
+        data: Record = {field: np.nan for field in fields}
 
         # Read the row corresponding to the observations of one navigation element.
         line = self.lines[self._cursor]
@@ -107,12 +107,12 @@ class Rinex2ObsReader(ABCReader):
 
         return data
 
-    def read(self):
+    def read(self) -> ObservationDataFrame:
         self._cursor = 0
         fields = self._read_header()
         self._cursor += 1
 
-        satellites = defaultdict(list)
+        satellites: defaultdict[str, list[Record]] = defaultdict(list)
 
         while self._cursor < len(self.lines):
             if self.lines[self._cursor].strip() == "":
@@ -130,7 +130,7 @@ class Rinex2ObsReader(ABCReader):
                 satellites[satellite].append(data)
 
         # Create the DataFrame
-        df_data = []
+        df_data: list[Record] = []
         for values in satellites.values():
             df_data.extend(values)
         df = ObservationDataFrame(df_data)

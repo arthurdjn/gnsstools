@@ -14,14 +14,14 @@ from shapely.geometry import Point
 from gnsstools import gnsstime
 
 from .datasets import PositionDataFrame
-from .reader import ABCReader
+from .reader import ABCReader, Record, Value
 
 
 class SP3Reader(ABCReader):
-    def __init__(self, lines):
+    def __init__(self, lines: list[str]) -> None:
         super().__init__(lines)
 
-    def _read_header(self):
+    def _read_header(self) -> dict[str, Value]:
         line = self.lines[self._cursor]
         return {
             "NumEpoch": self._eval(line[32:39]),
@@ -30,8 +30,8 @@ class SP3Reader(ABCReader):
             "Agency": self._eval(line[56:60]),
         }
 
-    def _read_sat(self):
-        satellites = []
+    def _read_sat(self) -> list[str]:
+        satellites: list[str] = []
         line = self.lines[self._cursor]
         sat_num = int(line[3:7])
         # There are maximum 17 satellites per row
@@ -53,21 +53,25 @@ class SP3Reader(ABCReader):
         # Return the corresponding satellites.
         return satellites
 
-    def _read_position(self):
+    def _read_position(self) -> Record:
         line = self.lines[self._cursor]
         return {
-            "Position": Point(self._eval(line[4:18]), self._eval(line[18:32]), self._eval(line[32:46])),
+            "Position": Point(
+                self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46])
+            ),
             "Clock": self._eval(line[46:60]),
         }
 
-    def _read_velocity(self):
+    def _read_velocity(self) -> Record:
         line = self.lines[self._cursor]
         return {
-            "Velocity": Point(self._eval(line[4:18]), self._eval(line[18:32]), self._eval(line[32:46])),
+            "Velocity": Point(
+                self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46])
+            ),
             "Clock": self._eval(line[46:60]),
         }
 
-    def read(self):
+    def read(self) -> PositionDataFrame:
         self._cursor = 0
         line = self.lines[self._cursor]
 
@@ -84,8 +88,8 @@ class SP3Reader(ABCReader):
         self._read_sat()
 
         # Read the data
-        satellites = defaultdict(list)
-        date = None
+        satellites: defaultdict[str, list[Record]] = defaultdict(list)
+        date: gnsstime | None = None
 
         while self._cursor < len(self.lines):
             line = self.lines[self._cursor]
@@ -115,8 +119,9 @@ class SP3Reader(ABCReader):
                 line = self.lines[self._cursor]
                 system, prn = self._eval(line[1]), self._eval(line[2:4])
                 # Extract the data
+                data: Record
                 if line.startswith("P"):
-                    data = data = self._read_position()
+                    data = self._read_position()
                 elif line.startswith("V"):
                     data = self._read_velocity()
                 # TODO: add "EP" and "SV" data
@@ -133,7 +138,7 @@ class SP3Reader(ABCReader):
             self._cursor += 1
 
         # Create the DataFrame
-        df_data = []
+        df_data: list[Record] = []
         for values in satellites.values():
             df_data.extend(values)
         df = PositionDataFrame(df_data)

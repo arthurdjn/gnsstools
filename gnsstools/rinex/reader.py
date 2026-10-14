@@ -9,19 +9,24 @@
 import re
 from abc import ABC, abstractmethod
 
+# A field of a RINEX record, as converted by `ABCReader._eval`.
+Value = int | float | str | None
+# A row of the DataFrame built by a reader: the fields of a record, its date, system, PRN, etc.
+Record = dict[str, object]
+
 
 class ABCReader(ABC):
-    def __init__(self, lines):
+    def __init__(self, lines: list[str]) -> None:
         super().__init__()
         self.lines = lines
         self._cursor = 0
 
     @abstractmethod
-    def read(self):
+    def read(self) -> object:
         """Parse the lines of the file."""
 
     @staticmethod
-    def _eval(string):
+    def _eval(string: str) -> Value:
         """Conversion from `RINEX` string representation of floats to python float.
 
         Args:
@@ -57,10 +62,18 @@ class ABCReader(ABC):
         # Else, return the stripped string
         return str(string)
 
-    def _skip_header(self):
+    @classmethod
+    def _eval_float(cls, string: str) -> float:
+        """Like `_eval`, for the fields that must hold a number."""
+        value = cls._eval(string)
+        if not isinstance(value, (int, float)):
+            raise ValueError(f"Expected a number, got {string!r}.")
+        return value
+
+    def _skip_header(self) -> None:
         while self._cursor < len(self.lines) and self.lines[self._cursor].strip() != "END OF HEADER":
             self._cursor += 1
 
-    def _skip_blank_lines(self):
+    def _skip_blank_lines(self) -> None:
         while self._cursor < len(self.lines) and self.lines[self._cursor].strip() == "":
             self._cursor += 1

@@ -13,16 +13,16 @@ from collections import defaultdict
 from gnsstools import gnsstime
 
 from .datasets import ObservationDataFrame
-from .reader import ABCReader
+from .reader import ABCReader, Record, Value
 
 
 class Rinex3ObsReader(ABCReader):
-    def __init__(self, lines):
+    def __init__(self, lines: list[str]) -> None:
         super().__init__(lines)
 
-    def _read_header(self):
+    def _read_header(self) -> defaultdict[Value, list[str]]:
         self._cursor = 0
-        fields_dict = defaultdict(list)
+        fields_dict: defaultdict[Value, list[str]] = defaultdict(list)
         line = self.lines[0]
 
         # Look for the obsearvations. Break if the header is passed.
@@ -50,8 +50,8 @@ class Rinex3ObsReader(ABCReader):
                 line = self.lines[self._cursor]
         return fields_dict
 
-    def _read_obs(self, fields):
-        data = {}
+    def _read_obs(self, fields: list[str]) -> Record:
+        data: Record = {}
         line = self.lines[self._cursor]
         for i, field in enumerate(fields):
             value = line[4 + i + 15 * i : 4 + i + 15 * (i + 1)]
@@ -59,12 +59,12 @@ class Rinex3ObsReader(ABCReader):
             data[field] = self._eval(value)
         return data
 
-    def read(self):
+    def read(self) -> ObservationDataFrame:
         self._cursor = 0
         fields_dict = self._read_header()
         self._cursor += 1
 
-        satellites = defaultdict(list)
+        satellites: defaultdict[str, list[Record]] = defaultdict(list)
 
         while self._cursor < len(self.lines):
             line = self.lines[self._cursor]
@@ -83,7 +83,7 @@ class Rinex3ObsReader(ABCReader):
                 )
                 date = gnsstime(year, month, day, hour, minute, second)
                 # Read the number associated to this date. Loop and extract their data.
-                sat_num = self._eval(line[33:35])
+                sat_num = int(line[33:35])
                 for _ in range(sat_num):
                     self._cursor += 1
                     line = self.lines[self._cursor]
@@ -103,7 +103,7 @@ class Rinex3ObsReader(ABCReader):
             self._cursor += 1
 
         # Create the DataFrame
-        df_data = []
+        df_data: list[Record] = []
         for values in satellites.values():
             df_data.extend(values)
         df = ObservationDataFrame(df_data)

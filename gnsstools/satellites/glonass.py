@@ -5,30 +5,34 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
+from datetime import datetime
+
+import numpy as np
+
 from .satellite import Satellite
 
 
 class GLONASS(Satellite):
     def __init__(
         self,
-        prn=None,
-        toc=None,
-        sv_clock_bias=None,
-        sv_rel_freq_bias=None,
-        message_frame_time=None,
-        x=None,
-        dx=None,
-        dx2=None,
-        health=None,
-        y=None,
-        dy=None,
-        dy2=None,
-        freq_num=None,
-        z=None,
-        dz=None,
-        dz2=None,
-        age_op_info=None,
-    ):
+        prn: int | None = None,
+        toc: datetime | np.datetime64 | None = None,
+        sv_clock_bias: float | None = None,
+        sv_rel_freq_bias: float | None = None,
+        message_frame_time: float | None = None,
+        x: float | None = None,
+        dx: float | None = None,
+        dx2: float | None = None,
+        health: float | None = None,
+        y: float | None = None,
+        dy: float | None = None,
+        dy2: float | None = None,
+        freq_num: float | None = None,
+        z: float | None = None,
+        dz: float | None = None,
+        dz2: float | None = None,
+        age_op_info: float | None = None,
+    ) -> None:
         super().__init__(prn=prn, toc=toc)
         self.sv_clock_bias = sv_clock_bias
         self.sv_rel_freq_bias = sv_rel_freq_bias
@@ -50,10 +54,10 @@ class GLONASS(Satellite):
         self.age_op_info = age_op_info
 
     @property
-    def system(self):
+    def system(self) -> str:
         return "R"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         rep = "GLONASS("
         rep += f"\n  system:              {self.system}"
         rep += f"\n  prn:                 {self.prn:d}"

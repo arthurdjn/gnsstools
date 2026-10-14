@@ -5,11 +5,21 @@
 # Copy_recight (c) 2021 Arthur Dujardin
 
 
+from typing import Any
+
 import numpy as np
+from numpy.typing import NDArray
 
 
 class Trilateration:
-    def __init__(self, sat_coords, distances, rec_coords=None, cdt=0, sigma=1):
+    def __init__(
+        self,
+        sat_coords: NDArray[np.float64],
+        distances: NDArray[np.float64],
+        rec_coords: NDArray[np.float64] | None = None,
+        cdt: float = 0,
+        sigma: float = 1,
+    ) -> None:
         # Satellites position
         nb_sat, nb_coords = sat_coords.shape
         assert nb_sat > 3 and nb_coords == 3, (
@@ -37,11 +47,11 @@ class Trilateration:
         self.sigma = sigma
 
         # Optimizer initial state
-        self.Qx = np.zeros((4, 4))
-        self.v = np.zeros((4, 1))
-        self.sigma0_2 = 1
+        self.Qx: NDArray[np.floating[Any]] = np.zeros((4, 4))
+        self.v: NDArray[np.floating[Any]] = np.zeros((4, 1))
+        self.sigma0_2: float = 1
 
-    def optimize(self, max_steps=None, epsilon=1e-6):
+    def optimize(self, max_steps: int | None = None, epsilon: float = 1e-6) -> tuple[NDArray[np.float64], float]:
         """Calcul d'une trilatération simple avec un offset
         correspondant à l'erreur d'horloge du récepteur
         """
@@ -96,5 +106,5 @@ class Trilateration:
         cdt = x0.flatten()[-1]
         return rec_coords, cdt
 
-    def __call__(self, *args, **kwargs):
-        return self.optimize(*args, **kwargs)
+    def __call__(self, max_steps: int | None = None, epsilon: float = 1e-6) -> tuple[NDArray[np.float64], float]:
+        return self.optimize(max_steps, epsilon)

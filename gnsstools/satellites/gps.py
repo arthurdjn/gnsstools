@@ -5,44 +5,48 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
+from datetime import datetime
+
+import numpy as np
+
 from .satellite import Satellite
 
 
 class GPS(Satellite):
     def __init__(
         self,
-        prn=None,
-        toc=None,
-        sv_clock_bias=None,
-        sv_clock_drift=None,
-        sv_clock_drift_rate=None,
-        iode=None,
-        crs=None,
-        delta_n=None,
-        m0=None,
-        cuc=None,
-        e=None,
-        cus=None,
-        sqrt_a=None,
-        toe=None,
-        cic=None,
-        omega0=None,
-        cis=None,
-        i0=None,
-        crc=None,
-        omega=None,
-        omega_dot=None,
-        idot=None,
-        l2_codes=None,
-        gps_week=None,
-        l2_pflag=None,
-        sv_acc=None,
-        sv_health=None,
-        tgd=None,
-        iodc=None,
-        trans_time=None,
-        fit_inter=None,
-    ):
+        prn: int | None = None,
+        toc: datetime | np.datetime64 | None = None,
+        sv_clock_bias: float | None = None,
+        sv_clock_drift: float | None = None,
+        sv_clock_drift_rate: float | None = None,
+        iode: float | None = None,
+        crs: float | None = None,
+        delta_n: float | None = None,
+        m0: float | None = None,
+        cuc: float | None = None,
+        e: float | None = None,
+        cus: float | None = None,
+        sqrt_a: float | None = None,
+        toe: float | None = None,
+        cic: float | None = None,
+        omega0: float | None = None,
+        cis: float | None = None,
+        i0: float | None = None,
+        crc: float | None = None,
+        omega: float | None = None,
+        omega_dot: float | None = None,
+        idot: float | None = None,
+        l2_codes: float | None = None,
+        gps_week: float | None = None,
+        l2_pflag: float | None = None,
+        sv_acc: float | None = None,
+        sv_health: float | None = None,
+        tgd: float | None = None,
+        iodc: float | None = None,
+        trans_time: float | None = None,
+        fit_inter: float | None = None,
+    ) -> None:
         super().__init__(prn=prn, toc=toc)
         # First row
         self.sv_clock_bias = sv_clock_bias
@@ -83,10 +87,10 @@ class GPS(Satellite):
         self.fit_inter = fit_inter
 
     @property
-    def system(self):
+    def system(self) -> str:
         return "G"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         rep = "GPS("
         # First line
         rep += f"\n  system:               {self.system}"

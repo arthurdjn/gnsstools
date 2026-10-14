@@ -45,6 +45,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: Scientific/Engineering :: Physics",
+    "Typing :: Typed",
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -64,9 +65,12 @@ Issues = "https://github.com/arthurdjn/gnsstools/issues"
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18.0",
+    "pandas-stubs>=2.2.0",
     "pytest>=8.4.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.0",
+    "types-shapely>=2.0.0",
 ]
 
 [tool.uv]
@@ -96,3 +100,14 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+
+[tool.mypy]
+files = ["gnsstools", "tests"]
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+# georinex ships no type information.
+module = ["georinex"]
+ignore_missing_imports = true

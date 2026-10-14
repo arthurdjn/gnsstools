@@ -17,7 +17,7 @@ from collections import defaultdict
 from gnsstools import gnsstime
 
 from .datasets import NavigationDataFrame
-from .reader import ABCReader
+from .reader import ABCReader, Record
 
 __all__ = ["RinexNavReader"]
 
@@ -31,11 +31,11 @@ class RinexNavReader(ABCReader):
 
     """
 
-    def __init__(self, lines, system=None):
+    def __init__(self, lines: list[str], system: str | None = None) -> None:
         super().__init__(lines)
         self.system = system
 
-    def _extract_g_fields(self):
+    def _extract_g_fields(self) -> Record:
         lines = self.lines[self._cursor : self._cursor + 8]
         self._cursor += 8
         return {
@@ -78,7 +78,7 @@ class RinexNavReader(ABCReader):
             "FitInter": self._eval(lines[7][23:42]),
         }
 
-    def _extract_r_fields(self):
+    def _extract_r_fields(self) -> Record:
         lines = self.lines[self._cursor : self._cursor + 4]
         self._cursor += 4
         return {
@@ -103,7 +103,7 @@ class RinexNavReader(ABCReader):
             "AgeOpInfo": self._eval(lines[3][61:80]),
         }
 
-    def _extract_e_fields(self):
+    def _extract_e_fields(self) -> Record:
         lines = self.lines[self._cursor : self._cursor + 8]
         self._cursor += 8
         return {
@@ -144,7 +144,7 @@ class RinexNavReader(ABCReader):
             "TransTime": self._eval(lines[7][4:23]),
         }
 
-    def read(self):
+    def read(self) -> NavigationDataFrame:
         """Read all the lines from a `RINEX` file and return a ``pandas.DataFrame``.
         The indexes are based on the ``satellite`` id.
         The number of row corresponds to the number of records (i.e. navigation elements).
@@ -154,7 +154,7 @@ class RinexNavReader(ABCReader):
         """
         # Construct a DataFrame
         self._cursor = 0
-        satellites = defaultdict(list)
+        satellites: defaultdict[str, list[Record]] = defaultdict(list)
 
         # Skip the header
         self._skip_header()
@@ -210,7 +210,7 @@ class RinexNavReader(ABCReader):
             satellites[satellite].append(data)
 
         # Create the DataFrame
-        df_data = []
+        df_data: list[Record] = []
         for values in satellites.values():
             df_data.extend(values)
         df = NavigationDataFrame(df_data)

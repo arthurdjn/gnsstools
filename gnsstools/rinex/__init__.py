@@ -5,6 +5,10 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
+from typing import Any
+
+import pandas as pd
+
 from .header import RinexHeaderReader
 from .nav import RinexNavReader
 from .obs2 import Rinex2ObsReader
@@ -15,7 +19,7 @@ from .utils import convert_georinex
 __all__ = ["load"]
 
 
-def load(filename, *args, force=False, **kwargs):
+def load(filename: str, *args: Any, force: bool = False, **kwargs: Any) -> pd.DataFrame:
     """Load any `RINEX` files, from ``.SP3`` and ``.rnx`` to ``.*o`` extensions.
 
     Args:
@@ -40,12 +44,11 @@ def load(filename, *args, force=False, **kwargs):
     with open(filename) as f:
         lines = f.read().split("\n")
 
-    reader = RinexHeaderReader(lines)
-    header = reader.read()
+    header = RinexHeaderReader(lines).read()
     version = header.get("Version", 3.04)
     dtype = header.get("Type", None)
 
-    df = None
+    df: pd.DataFrame
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'crx' reader are missing)
     # Read Navigation data
     if dtype == "N":
@@ -54,26 +57,21 @@ def load(filename, *args, force=False, **kwargs):
             system = "G"
         elif filename.endswith("g"):
             system = "R"
-        reader = RinexNavReader(lines, system=system)
-        df = reader.read()
-        df.attrs = header
+        df = RinexNavReader(lines, system=system).read()
+        df.attrs = dict(header.items())
 
     # Read observation data
     elif dtype == "O":
-        if version < 3:
-            reader = Rinex2ObsReader(lines)
-            df = reader.read()
-            df.attrs = header
+        if isinstance(version, (int, float)) and version < 3:
+            df = Rinex2ObsReader(lines).read()
         else:
-            reader = Rinex3ObsReader(lines)
-            df = reader.read()
-            df.attrs = header
+            df = Rinex3ObsReader(lines).read()
+        df.attrs = dict(header.items())
 
     # Read SP3 data
     elif filename.lower().endswith(".sp3"):
-        reader = SP3Reader(lines)
-        df = reader.read()
-        df.attrs = header
+        df = SP3Reader(lines).read()
+        df.attrs = dict(header.items())
 
     # Read with GeoRinex package
     else:
