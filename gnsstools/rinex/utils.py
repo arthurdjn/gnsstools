@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: utils.py
-# Creation: Tuesday January 26th 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 from collections import defaultdict
 from collections.abc import Hashable
 from typing import TYPE_CHECKING, Any

@@ -1,10 +1,3 @@
-# File: const.py
-# Creation: Friday January 22nd 2021
-# Author: Arthur Dujardin
-# ------
-# Copyright (c) 2021 Arthur Dujardin
-
-
 from math import pi
 
 # +-----------------------------+------------------+

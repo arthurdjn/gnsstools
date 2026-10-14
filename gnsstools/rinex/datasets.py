@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: datasets.py
-# Creation: Saturday January 30th 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 from datetime import datetime
 from typing import Any, NoReturn
 

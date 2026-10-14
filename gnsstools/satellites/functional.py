@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: functional.py
-# Creation: Sunday January 31st 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 import numpy as np
 from numpy.typing import NDArray
 

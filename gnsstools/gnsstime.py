@@ -1,10 +1,3 @@
-# File: time.py
-# Creation: Saturday January 23rd 2021
-# Author: Arthur Dujardin
-# ------
-# Copyright (c) 2021 Arthur Dujardin
-
-
 import calendar
 import math
 from datetime import datetime, timedelta, tzinfo

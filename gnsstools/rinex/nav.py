@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: nav3.py
-# Creation: Tuesday January 26th 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 r"""
 This module reads the navigation messages of `RINEX` files, versions 2 and 3.
 """

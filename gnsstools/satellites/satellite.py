@@ -1,10 +1,3 @@
-# File: satellite.py
-# Creation: Saturday January 23rd 2021
-# Author: Arthur Dujardin
-# ------
-# Copyright (c) 2021 Arthur Dujardin
-
-
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, NoReturn

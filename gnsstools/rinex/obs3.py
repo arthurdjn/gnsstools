@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: obs3.py
-# Creation: Tuesday January 26th 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 import math
 import re
 from collections import defaultdict
