@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # Same cooldown as `exclude-newer` in pyproject.toml: let a release age before adopting it.
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"

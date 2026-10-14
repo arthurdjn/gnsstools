@@ -5,8 +5,10 @@
 
 <div align="center">
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+[![Tests](https://github.com/arthurdjn/gnsstools/actions/workflows/tests.yml/badge.svg)](https://github.com/arthurdjn/gnsstools/actions/workflows/tests.yml)
+[![Code Quality](https://github.com/arthurdjn/gnsstools/actions/workflows/code-quality.yml/badge.svg)](https://github.com/arthurdjn/gnsstools/actions/workflows/code-quality.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://github.com/arthurdjn/gnsstools/blob/main/pyproject.toml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/arthurdjn/gnsstools/blob/main/LICENSE)
 
 </div>
 
@@ -23,6 +25,7 @@
 - [GNSS Time](#gnsstime)
 - [Rinex](#rinex)
 - [Satellites](#satellites)
+- [Contributing](#contributing)
 
 ## About <a name = "about"></a>
 
@@ -233,3 +236,9 @@ df = rinex.load(filename)
 ## Satellites <a name = "satellites"></a>
 
 *Work in Progress*
+
+## Contributing <a name = "contributing"></a>
+
+Contributions are welcome! [CONTRIBUTING.md](https://github.com/arthurdjn/gnsstools/blob/main/CONTRIBUTING.md) explains
+how to set up the development environment, run the tests and the checks, and open a pull request. Notable changes are
+listed in the [changelog](https://github.com/arthurdjn/gnsstools/blob/main/CHANGELOG.md).

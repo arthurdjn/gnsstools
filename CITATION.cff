@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this library, please cite it as below."
+type: software
+title: "gnsstools"
+abstract: "Python tools to read RINEX and SP3 files and process GNSS data: time conversions, broadcast ephemerides, satellite orbits and receiver positioning."
+authors:
+  - family-names: "Dujardin"
+    given-names: "Arthur"
+    email: "arthurdujardin.dev@gmail.com"
+license: "MIT"
+repository-code: "https://github.com/arthurdjn/gnsstools"
+keywords:
+  - "gnss"
+  - "gps"
+  - "galileo"
+  - "glonass"
+  - "rinex"
+  - "sp3"
+  - "geodesy"
