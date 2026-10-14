@@ -20,6 +20,9 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Changed
 
+- `GALILEO` and `GLONASS` are renamed `Galileo` and `Glonass`, and `gnsstools.satellites.funtional` is renamed
+  `gnsstools.satellites.functional`. The old names still work, with a `DeprecationWarning`.
+  `get_satellite_position` can be imported from `gnsstools.satellites`.
 - `import gnsstools` no longer writes a `gnss_toolbox.log` file in the working directory, and `rinex.load` no longer
   prints the header of the file (nor the navigation reader a line counter).
 - `rinex.load` imports `georinex` only for the files that need it, and raises an `ImportError` with the install

@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from gnsstools.gnsstime import to_gnsstime
-from gnsstools.satellites import GALILEO, GLONASS, GPS, Satellite
+from gnsstools.satellites import GPS, Galileo, Glonass, Satellite
 
 # The attribute of the satellite classes (`gnsstools.satellites`) for each field of the navigation records.
 ATTRIBUTES = {
@@ -90,7 +90,7 @@ class NavigationDataFrame(pd.DataFrame):
                 ``date``. Defaults to ``False``.
 
         Returns:
-            Satellite: A ``GPS``, ``GLONASS`` or ``GALILEO`` instance, or ``None`` for the other systems. When several
+            Satellite: A ``GPS``, ``Glonass`` or ``Galileo`` instance, or ``None`` for the other systems. When several
             records share the closest epoch (e.g. the F/NAV and I/NAV messages of Galileo), the first one is used.
 
         Raises:
@@ -126,9 +126,9 @@ class NavigationDataFrame(pd.DataFrame):
         if system == "G":
             return GPS(**arguments)
         elif system == "R":
-            return GLONASS(**arguments)
+            return Glonass(**arguments)
         elif system == "E":
-            return GALILEO(**arguments)
+            return Galileo(**arguments)
         return None
 
 

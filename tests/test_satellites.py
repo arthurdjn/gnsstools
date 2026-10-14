@@ -1,12 +1,13 @@
+import importlib
 import inspect
+import sys
 
 import numpy as np
 import pytest
 
-from gnsstools import gnsstime
+from gnsstools import gnsstime, satellites
 from gnsstools.rinex.datasets import ATTRIBUTES, NavigationDataFrame, PositionDataFrame
-from gnsstools.satellites import GALILEO, GLONASS, GPS, Satellite
-from gnsstools.satellites.funtional import get_satellite_position
+from gnsstools.satellites import GPS, Galileo, Glonass, Satellite, get_satellite_position
 
 from .conftest import record
 
@@ -16,8 +17,8 @@ from .conftest import record
     [
         ("G", 1, gnsstime(2018, 10, 12, 0, 40, 15), GPS, gnsstime(2018, 10, 12)),
         ("G", 1, gnsstime(2018, 10, 12, 1, 30), GPS, gnsstime(2018, 10, 12, 2)),
-        ("R", 1, gnsstime(2018, 10, 12, 0, 40), GLONASS, gnsstime(2018, 10, 12, 0, 45)),
-        ("E", 1, gnsstime(2018, 10, 12, 1), GALILEO, gnsstime(2018, 10, 12, 0, 50)),
+        ("R", 1, gnsstime(2018, 10, 12, 0, 40), Glonass, gnsstime(2018, 10, 12, 0, 45)),
+        ("E", 1, gnsstime(2018, 10, 12, 1), Galileo, gnsstime(2018, 10, 12, 0, 50)),
     ],
 )
 def test_select_the_closest_ephemeris(
@@ -42,7 +43,7 @@ def test_select_sets_the_ephemeris(nav3: NavigationDataFrame) -> None:
 def test_select_an_epoch_with_several_records(nav3: NavigationDataFrame) -> None:
     # E01 has the F/NAV and the I/NAV records of the same epoch: the first one is used.
     satellite = nav3.select("E", 1, gnsstime(2018, 10, 12, 1))
-    assert isinstance(satellite, GALILEO)
+    assert isinstance(satellite, Galileo)
     assert satellite.sqrt_a == 5.440611371994e03
     assert satellite.data_sources == 258.0
 
@@ -61,7 +62,7 @@ def test_select_too_far_from_the_date(nav3: NavigationDataFrame) -> None:
     assert satellite.toc == gnsstime(2018, 10, 12, 0, 50)
 
 
-@pytest.mark.parametrize(("system", "cls"), [("G", GPS), ("R", GLONASS), ("E", GALILEO)])
+@pytest.mark.parametrize(("system", "cls"), [("G", GPS), ("R", Glonass), ("E", Galileo)])
 def test_every_navigation_field_is_a_satellite_argument(
     nav3: NavigationDataFrame, system: str, cls: type[Satellite]
 ) -> None:
@@ -70,7 +71,7 @@ def test_every_navigation_field_is_a_satellite_argument(
     assert [field for field in fields if ATTRIBUTES[field] not in parameters] == []
 
 
-@pytest.mark.parametrize(("system", "name"), [("G", "GPS("), ("R", "GLONASS(")])
+@pytest.mark.parametrize(("system", "name"), [("G", "GPS("), ("R", "Glonass(")])
 def test_repr(nav3: NavigationDataFrame, system: str, name: str) -> None:
     text = repr(nav3.select(system, 1, gnsstime(2018, 10, 12, 1)))
     assert text.startswith(name)
@@ -79,7 +80,7 @@ def test_repr(nav3: NavigationDataFrame, system: str, name: str) -> None:
 
 def test_galileo_repr(nav3: NavigationDataFrame) -> None:
     text = repr(nav3.select("E", 1, gnsstime(2018, 10, 12, 1)))
-    assert text.startswith("GALILEO(")
+    assert text.startswith("Galileo(")
     assert "sqrt_a:" in text
     assert "data_sources:" in text
 
@@ -104,10 +105,23 @@ def test_broadcast_orbit_matches_precise_orbit(
     date: gnsstime,
 ) -> None:
     satellite = nav3.select(system, prn, toc)
-    assert isinstance(satellite, (GPS, GALILEO))
+    assert isinstance(satellite, (GPS, Galileo))
     position, clock = get_satellite_position(satellite, date)
     precise = record(sp3 if system == "G" else sp3_mgex, (system, prn, date))
     # Broadcast orbits are good to a few meters.
     assert np.linalg.norm(position - precise[["X", "Y", "Z"]].to_numpy(dtype=float)) < 3.0
     # SP3 clocks do not include the periodic relativistic correction, up to ~20 ns for GPS.
     assert abs(clock - precise["Clock"]) < 30e-9
+
+
+@pytest.mark.parametrize(("name", "cls"), [("GALILEO", Galileo), ("GLONASS", Glonass)])
+def test_deprecated_class_names(name: str, cls: type[Satellite]) -> None:
+    with pytest.warns(DeprecationWarning, match=f"use gnsstools.satellites.{cls.__name__}"):
+        assert getattr(satellites, name) is cls
+
+
+def test_deprecated_functional_module() -> None:
+    sys.modules.pop("gnsstools.satellites.funtional", None)
+    with pytest.warns(DeprecationWarning, match="gnsstools.satellites.functional"):
+        module = importlib.import_module("gnsstools.satellites.funtional")
+    assert module.get_satellite_position is get_satellite_position
