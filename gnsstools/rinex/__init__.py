@@ -8,19 +8,12 @@
 # Basic imports
 
 # GNSS Tools
-from gnsstools.logger import logger
 from .header import RinexHeaderReader
 from .nav import RinexNavReader
 from .obs2 import Rinex2ObsReader
 from .obs3 import Rinex3ObsReader
 from .sp3 import SP3Reader
 from .utils import convert_georinex
-
-
-try:
-    import georinex
-except:
-    logger.warning("The package 'georinex' was not found. Please install it to handles more files: pip install georinex.")
 
 
 __all__ = [
@@ -57,9 +50,7 @@ def load(filename, *args, force=False, **kwargs):
     header = reader.read()
     version = header.get("Version", 3.04)
     dtype = header.get("Type", None)
-    
-    print(header)
-    
+
     df = None
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'crx' reader are missing)
     # Read Navigation data
@@ -92,6 +83,12 @@ def load(filename, *args, force=False, **kwargs):
     
     # Read with GeoRinex package
     else:
+        try:
+            import georinex
+        except ImportError as error:
+            raise ImportError(
+                f"Reading '{filename}' requires the optional 'georinex' package: pip install georinex"
+            ) from error
         ds = georinex.load(filename, *args, **kwargs)
         df = convert_georinex(ds)
 

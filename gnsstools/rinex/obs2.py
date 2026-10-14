@@ -16,7 +16,6 @@ import pandas as pd
 # GNSS Tools
 from .reader import ABCReader
 from .datasets import ObservationDataFrame
-from gnsstools.logger import logger
 from gnsstools import gnsstime
 
 

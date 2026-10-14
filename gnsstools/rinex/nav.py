@@ -168,7 +168,6 @@ class RinexNavReader(ABCReader):
 
         while self._cursor < len(self.lines):
             line = self.lines[self._cursor]
-            print(f"\r{self._cursor}", end="")
 
             # If the line is blank
             if line.strip() == "":
