@@ -1,0 +1,50 @@
+name: "Bug Report"
+description: "Submit a report to help us reproduce and fix the bug"
+labels: bug
+
+body:
+  - type: markdown
+    attributes:
+      value: >
+        #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/arthurdjn/gnsstools/issues).
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: |
+        Please provide a clear and concise description of the bug.
+
+        Add a minimal example so that we can reproduce the error by running the code:
+
+        ```python
+        from gnsstools import rinex
+
+        df = rinex.load("BRDC00IGS_R_20182850000_01D_MN.rnx")
+        ```
+
+        If the bug happens while reading a file, please attach the file, or the few lines of it that trigger the bug
+        (with the header). Public files (IGS, CDDIS, ...) can be linked instead.
+
+        Please also paste or describe the results you observe instead of the expected results. If you observe an
+        error, please paste the error message including the **full** traceback of the exception.
+      placeholder: |
+        A clear and concise description of the bug.
+
+        ```python
+        # Sample code to reproduce the problem
+        ```
+
+        ```
+        The error message you got, with the full traceback.
+        ```
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Versions
+      description: |
+        Please run the following and paste the output below.
+        ```sh
+        python -c "import sys, platform, gnsstools, numpy, pandas; print(sys.version, platform.platform(), gnsstools.__version__, numpy.__version__, pandas.__version__)"
+        ```
+    validations:
+      required: true

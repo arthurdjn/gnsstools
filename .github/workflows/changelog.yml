@@ -1,0 +1,19 @@
+name: Changelog Enforcer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Enforce changelog entry
+        uses: dangoslen/changelog-enforcer@8b5e9dc3121363bb7c0115f8533404d92af382de # v3.7.0
+        with:
+          # Dependabot labels its pull requests with "dependencies".
+          skipLabels: skip-changelog, dependencies
