@@ -6,7 +6,7 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-import re
+import math
 from collections import defaultdict
 
 from shapely.geometry import Point
@@ -14,96 +14,103 @@ from shapely.geometry import Point
 from gnsstools import gnsstime
 
 from .datasets import PositionDataFrame
-from .reader import ABCReader, Record, Value
+from .reader import ABCReader, Record
+
+# Clocks and clock rates of the SP3 records that are bad or absent.
+ABSENT_CLOCK = 999999.999999
 
 
 class SP3Reader(ABCReader):
+    """
+    Reads `SP3` files (versions a to d) of precise orbits.
+
+    Each row is a satellite at an epoch, with its ``Position`` (km) and ``Clock`` (microseconds) and, when the file has
+    velocities, its ``Velocity`` (dm/s) and ``ClockRate`` (10^-4 microseconds/s). Absent clocks are NaN. The header is
+    stored in the ``attrs`` of the DataFrame.
+
+    * :attr:`lines` (list): List of lines to process.
+
+    """
+
     def __init__(self, lines: list[str]) -> None:
         super().__init__(lines)
 
-    def _read_header(self) -> dict[str, Value]:
-        line = self.lines[self._cursor]
-        return {
+    @staticmethod
+    def is_sp3(lines: list[str]) -> bool:
+        """Whether the lines are those of an SP3 file."""
+        return len(lines) > 0 and len(lines[0]) > 2 and lines[0][0] == "#" and lines[0][1] in "abcd"
+
+    def _read_header(self) -> Record:
+        line = self.lines[0]
+        header: Record = {
+            "Version": line[1],
+            # "P" for positions only, "V" for positions and velocities.
+            "PosVelFlag": line[2],
+            "StartDate": gnsstime(line[3:7], line[8:10], line[11:13], line[14:16], line[17:19], line[20:31]),
             "NumEpoch": self._eval(line[32:39]),
+            "DataUsed": self._eval(line[40:45]),
             "CoordSystem": self._eval(line[46:51]),
             "OrbitType": self._eval(line[52:55]),
             "Agency": self._eval(line[56:60]),
         }
+        line = self.lines[1]
+        header.update(
+            {
+                "GPSWeek": self._eval(line[3:7]),
+                "SecondsOfWeek": self._eval(line[8:23]),
+                "Interval": self._eval(line[24:38]),
+                "MJD": self._eval(line[39:44]),
+                "FractionalDay": self._eval(line[45:60]),
+            }
+        )
+        for line in self.lines[2:]:
+            if line.startswith("*"):
+                break
+            if line.startswith("%c"):
+                header.setdefault("FileType", self._eval(line[3:5]))
+                header.setdefault("TimeSystem", self._eval(line[9:12]))
+        header["Satellites"] = self._read_sat()
+        return header
 
     def _read_sat(self) -> list[str]:
+        """The satellites of the "+" header records."""
         satellites: list[str] = []
-        line = self.lines[self._cursor]
-        sat_num = int(line[3:7])
-        # There are maximum 17 satellites per row
-        while len(satellites) < sat_num:
-            line = self.lines[self._cursor]
-            satellites_sequence = line[9:60]
-
+        lines = [line for line in self.lines if line.startswith("+ ")]
+        sat_num = int(lines[0][3:6])
+        for line in lines:
             # There are maximum 17 satellites per row
             # e.g. satellites_sequence = "G01G02G03G04G05G06G07G08G09G10G11G12G13G14G15G16G17"
+            satellites_sequence = line[9:60]
             for isat in range(17):
                 # Extract and save the id of the satellite
                 satellite = satellites_sequence[isat * 3 : (isat + 1) * 3].strip()
-                if satellite != "":
+                if satellite not in ("", "0", "00"):
                     # Replace blank space by 0 (e.g. "G 2" -> "G02")
-                    satellite = re.sub(r"[A-Z][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), satellite)
-                    satellites.append(satellite)
-            self._cursor += 1
+                    satellites.append(satellite.replace(" ", "0"))
+        return satellites[:sat_num]
 
-        # Return the corresponding satellites.
-        return satellites
-
-    def _read_position(self) -> Record:
-        line = self.lines[self._cursor]
-        return {
-            "Position": Point(
-                self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46])
-            ),
-            "Clock": self._eval(line[46:60]),
-        }
-
-    def _read_velocity(self) -> Record:
-        line = self.lines[self._cursor]
-        return {
-            "Velocity": Point(
-                self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46])
-            ),
-            "Clock": self._eval(line[46:60]),
-        }
+    def _read_values(self, line: str) -> tuple[Point, float]:
+        """The 3 coordinates of a position or velocity record, and its clock or clock rate."""
+        point = Point(self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46]))
+        clock = self._eval(line[46:60])
+        if not isinstance(clock, (int, float)) or clock >= ABSENT_CLOCK:
+            return point, math.nan
+        return point, clock
 
     def read(self) -> PositionDataFrame:
         self._cursor = 0
-        line = self.lines[self._cursor]
+        header = self._read_header()
 
-        # Read the header
-        while not line.startswith("#"):
-            self._cursor += 1
-            line = self.lines[self._cursor]
-
-        # Read the list of SV (satellites) available.
-        while not line.startswith("+"):
-            self._cursor += 1
-            line = self.lines[self._cursor]
-        # Move the cursor past the list of satellites.
-        self._read_sat()
-
-        # Read the data
-        satellites: defaultdict[str, list[Record]] = defaultdict(list)
+        # One record per satellite and epoch, holding its position and velocity.
+        records: dict[tuple[str, gnsstime], Record] = {}
+        epochs: defaultdict[str, int] = defaultdict(int)
         date: gnsstime | None = None
-
-        while self._cursor < len(self.lines):
-            line = self.lines[self._cursor]
+        for line in self.lines:
             # If the end is reached, break.
-            if line.strip() == "EOF":
+            if line.startswith("EOF"):
                 break
-            elif line.strip() == "":
-                self._cursor += 1
-                continue
             # Read the date for a set of observations.
-            # NOTE: There should be `len(satellites_list)` observations.
-            # However, the following will still work if it's not the case.
             elif line.startswith("*"):
-                line = self.lines[self._cursor]
                 year, month, day, hour, minute, second = (
                     line[3:7],
                     line[8:10],
@@ -113,38 +120,30 @@ class SP3Reader(ABCReader):
                     line[20:31],
                 )
                 date = gnsstime(year, month, day, hour, minute, second)
-
-            # Search for data to add
-            elif re.search("[PV]", line[0]):
-                line = self.lines[self._cursor]
+            # Position and velocity records. The correlation records ("EP", "EV") are not read.
+            elif line[:1] in ("P", "V") and date is not None:
                 system, prn = self._eval(line[1]), self._eval(line[2:4])
-                # Extract the data
-                data: Record
-                if line.startswith("P"):
-                    data = self._read_position()
-                elif line.startswith("V"):
-                    data = self._read_velocity()
-                # TODO: add "EP" and "SV" data
-                else:
-                    data = {}
-                # Add relevant information
-                data["Date"] = date
-                data["System"] = system
-                data["PRN"] = prn
                 satellite = f"{system}{prn}"
-                data["Session"] = len(satellites[satellite]) + 1
-                satellites[satellite].append(data)
-            # Read the next line
-            self._cursor += 1
+                if (satellite, date) not in records:
+                    epochs[satellite] += 1
+                    records[satellite, date] = {
+                        "Date": date,
+                        "System": system,
+                        "PRN": prn,
+                        "Session": epochs[satellite],
+                    }
+                record = records[satellite, date]
+                if line.startswith("P"):
+                    record["Position"], record["Clock"] = self._read_values(line)
+                else:
+                    record["Velocity"], record["ClockRate"] = self._read_values(line)
 
         # Create the DataFrame
-        df_data: list[Record] = []
-        for values in satellites.values():
-            df_data.extend(values)
-        df = PositionDataFrame(df_data)
+        df = PositionDataFrame(list(records.values()))
         # Make it pretty
         df = df.set_index(["System", "PRN", "Date"])
         columns = sorted([col for col in df.columns])
         df = df.reindex(columns, axis=1)
         df = df.sort_index()
+        df.attrs = dict(header.items())
         return df
