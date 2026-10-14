@@ -32,11 +32,16 @@ All notable changes to this project are documented in this file. The format is b
   month or the day is missing.
 - `gnsstime.frommjd`, `fromjd` and `fromjd50` no longer use `datetime.utcfromtimestamp`, deprecated since Python 3.12:
   they work for dates before 1970 on Windows.
+- `Trilateration` raises a `ValueError` instead of an `AssertionError` for fewer than 4 satellites or a number of
+  distances that does not match, and `Trilateration.optimize` stops when the update of the parameters is smaller than
+  `epsilon` (in meters) rather than when the variance factor stops changing.
 - `rinex.load` accepts `os.PathLike` paths, and reads the system of a RINEX 2 navigation file (GPS, GLONASS, ...)
   from its header instead of the last letter of its name.
 
 ### Fixed
 
+- `Trilateration.optimize` stopped after one iteration with exactly 4 satellites (the variance factor divided by
+  zero), and ignored its `epsilon` argument.
 - `gnsstime.sow` counted the days from the day of the year modulo 7 instead of the start of the GPS week. It was only
   right in the years that start on a Monday (like 2018), and so were the positions of `get_satellite_position`.
 - Copying or unpickling a `gnsstime` returned `None`.
