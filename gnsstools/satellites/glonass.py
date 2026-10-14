@@ -12,7 +12,7 @@ import numpy as np
 from .satellite import Satellite
 
 
-class GLONASS(Satellite):
+class Glonass(Satellite):
     def __init__(
         self,
         prn: int | None = None,
@@ -58,7 +58,7 @@ class GLONASS(Satellite):
         return "R"
 
     def __repr__(self) -> str:
-        rep = "GLONASS("
+        rep = "Glonass("
         rep += f"\n  system:              {self.system}"
         rep += f"\n  prn:                 {self.prn:d}"
         rep += f"\n  toc:                 {self.toc} [UTC] (Time Of Clock)"

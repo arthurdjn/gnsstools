@@ -12,7 +12,7 @@ import numpy as np
 from .satellite import Satellite
 
 
-class GALILEO(Satellite):
+class Galileo(Satellite):
     def __init__(
         self,
         prn: int | None = None,
@@ -87,7 +87,7 @@ class GALILEO(Satellite):
         return "E"
 
     def __repr__(self) -> str:
-        rep = "GALILEO("
+        rep = "Galileo("
         # First line
         rep += f"\n  system:               {self.system}"
         rep += f"\n  prn:                  {self.prn:d}"
