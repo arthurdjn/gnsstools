@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file. The format is b
 
 ## Unreleased
 
+### Added
+
+- The header of SP3 files is stored in the `attrs` of the DataFrame: version, start date, number of epochs,
+  coordinate system, agency, GPS week, interval, time system, satellites, ...
+- `rinex.load` recognizes SP3 files by their content, whatever their extension (`.sp3`, `.eph`, ...).
+
 ### Removed
 
 - The `Orbit` and `GNSSProcess` classes, with the `gnsstools.orbits` and `gnsstools.process` modules: they were written
@@ -40,6 +46,9 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Fixed
 
+- The velocity records of SP3 files were rows of their own, with the same index as the position rows and their clock
+  rate in the `Clock` column. They are in the `Velocity` and `ClockRate` columns of the position rows.
+- The absent clocks of SP3 files (`999999.999999`) are NaN.
 - `Trilateration.optimize` stopped after one iteration with exactly 4 satellites (the variance factor divided by
   zero), and ignored its `epsilon` argument.
 - `gnsstime.sow` counted the days from the day of the year modulo 7 instead of the start of the GPS week. It was only

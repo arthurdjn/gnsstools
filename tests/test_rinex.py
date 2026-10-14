@@ -12,7 +12,7 @@ from gnsstools.rinex.obs2 import Rinex2ObsReader
 from gnsstools.rinex.obs3 import Rinex3ObsReader
 from gnsstools.rinex.utils import convert_georinex
 
-from .conftest import NAV2, NAV2_GLONASS, NAV3, OBS2, OBS3, record
+from .conftest import NAV2, NAV2_GLONASS, NAV3, OBS2, OBS3, SP3_VELOCITY, record
 
 INDEX = ["System", "PRN", "Date"]
 
@@ -166,6 +166,46 @@ def test_sp3_values(sp3: PositionDataFrame) -> None:
     assert row["Position"].coords[0] == (-17852.839089, -6014.552104, 18675.309680)
     assert row["Clock"] == -99.264764
     assert sp3.loc[("G", 1, gnsstime(2018, 10, 12, 1, 30)), "Session"] == 7
+
+
+def test_sp3_header(sp3: PositionDataFrame) -> None:
+    assert sp3.attrs["Version"] == "c"
+    assert sp3.attrs["PosVelFlag"] == "P"
+    assert sp3.attrs["StartDate"] == gnsstime(2018, 10, 12)
+    assert sp3.attrs["NumEpoch"] == 97
+    assert (sp3.attrs["CoordSystem"], sp3.attrs["OrbitType"], sp3.attrs["Agency"]) == ("IGS14", "FIT", None)
+    assert (sp3.attrs["GPSWeek"], sp3.attrs["SecondsOfWeek"], sp3.attrs["Interval"]) == (2022, 432_000.0, 900.0)
+    assert (sp3.attrs["MJD"], sp3.attrs["FractionalDay"]) == (58403, 0.0)
+    assert (sp3.attrs["FileType"], sp3.attrs["TimeSystem"]) == ("M", "GPS")
+    assert len(sp3.attrs["Satellites"]) == 51
+    assert sp3.attrs["Satellites"][:2] == ["G01", "G02"]
+
+
+def test_sp3d_with_another_extension(sp3_mgex: PositionDataFrame) -> None:
+    assert sp3_mgex.attrs["Version"] == "d"
+    assert sp3_mgex.attrs["Agency"] == "AIUB"
+    assert sp3_mgex.attrs["Interval"] == 300.0
+    assert len(sp3_mgex.attrs["Satellites"]) == 88
+    assert sp3_mgex.groupby(level="System").size().to_dict() == {"C": 70, "E": 140, "J": 21, "R": 8}
+
+
+def test_sp3_absent_clocks(sp3_mgex: PositionDataFrame) -> None:
+    absent = record(sp3_mgex, ("R", 15, gnsstime(2018, 10, 12, 18, 15)))
+    assert np.isnan(absent["Clock"])
+    assert absent["Position"].coords[0] == (-831.097003, -10665.027269, -23139.981120)
+    assert record(sp3_mgex, ("R", 15, gnsstime(2018, 10, 12)))["Clock"] == -17.535961
+
+
+def test_sp3_velocities() -> None:
+    sp3 = rinex.load(SP3_VELOCITY)
+    assert sp3.attrs["PosVelFlag"] == "V"
+    # The position and the velocity of a satellite at an epoch are in the same row.
+    assert len(sp3) == 4
+    assert sorted(sp3.columns) == ["Clock", "ClockRate", "Position", "Session", "Velocity"]
+    row = record(sp3, ("G", 1, gnsstime(2018, 10, 12, 0, 30)))
+    assert row["Position"].coords[0] == (-19742.315869, -9449.478234, 15086.967467)
+    assert row["Velocity"].coords[0] == (-10070.4184, -16491.237167, -23003.008256)
+    assert (row["Clock"], row["ClockRate"], row["Session"]) == (-99.273602, -0.049106, 2)
 
 
 def test_unknown_formats_need_georinex(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

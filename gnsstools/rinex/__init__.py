@@ -66,10 +66,9 @@ def load(filename: str | os.PathLike[str], *args: Any, force: bool = False, **kw
             df = Rinex3ObsReader(lines).read()
         df.attrs = dict(header.items())
 
-    # Read SP3 data
-    elif filename.lower().endswith(".sp3"):
+    # Read SP3 data (recognized by their first line, whatever the extension: .sp3, .eph, ...)
+    elif SP3Reader.is_sp3(lines):
         df = SP3Reader(lines).read()
-        df.attrs = dict(header.items())
 
     # Read with GeoRinex package
     else:
