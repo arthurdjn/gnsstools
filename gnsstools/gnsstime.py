@@ -7,8 +7,7 @@
 
 import calendar
 import math
-from datetime import datetime, tzinfo
-from typing import Any
+from datetime import datetime, timedelta, tzinfo
 
 import numpy as np
 
@@ -55,7 +54,11 @@ def to_gnsstime(element: object) -> "gnsstime":
         pass
 
     elif isinstance(element, np.datetime64):
-        element = datetime.utcfromtimestamp(element.astype("O") / 1e9)
+        # `item` gives a datetime for microsecond values, an int for nanosecond ones, None for NaT.
+        value = element.astype("datetime64[us]").item()
+        if not isinstance(value, datetime):
+            raise ValueError(f"The element to be converted to gnsstime is not a valid date. Got {element!r}.")
+        element = value
 
     else:
         raise ValueError(f"The element to be converted to gnsstime is unknown. Got type {type(element)}.")
@@ -77,7 +80,9 @@ class gnsstime(datetime):
     r"""Defines GNSS time, providing built-in functions to fasten date conversion.
 
     The year, month and day arguments are required. tzinfo may be None, or an
-    instance of a tzinfo subclass. The remaining arguments may be ints.
+    instance of a tzinfo subclass. The other arguments may be ints, floats or strings (as read from RINEX files):
+    two-digit years from 00 to 79 are in the 2000s and from 80 to 99 in the 1900s, and the fractional part of the
+    day, hour, minute and second is carried to the smaller units, rounded to the microsecond.
 
     .. note::
         This class inherits from ``datetime`` class.
@@ -110,7 +115,7 @@ class gnsstime(datetime):
 
     def __new__(
         cls,
-        year: int | float | str | None,
+        year: int | float | str | bytes,
         month: int | float | str | None = None,
         day: int | float | str | None = None,
         hour: int | float | str = 0,
@@ -120,49 +125,52 @@ class gnsstime(datetime):
         tzinfo: tzinfo | None = None,
         *,
         fold: int = 0,
-        **kwargs: Any,
     ) -> "gnsstime":
+        # `pickle` and `copy` rebuild a datetime from its packed state, followed by its tzinfo in place of the month.
+        if isinstance(year, bytes):
+            return datetime.__new__(cls, year, month)  # type: ignore[call-arg,arg-type]
+        if month is None or day is None:
+            raise TypeError("gnsstime needs a year, a month and a day.")
 
-        # Return None if the date is not valid
-        if year is None or month is None or day is None:
-            return None  # type: ignore[return-value]  # Kept for backward compatibility
-
-        # Convert the values to integer
+        # Format the year, in case its a two digit number, as in RINEX files.
         year = int(year)
-        month = int(month)
-        day = int(day)
-        hour = int(hour)
-        minute = int(minute)
-        # Split microsecond from second (i.e. second=1.9 -> second=1, microsecond=900000)
-        microsecond_, second = math.modf(float(second))
-        microsecond_ = math.floor(microsecond_ * 1e6)
-        second = math.floor(second)
-        microsecond = math.floor(microsecond)
-
-        # Use the microsecond provided with the second (if any)
-        if microsecond_ > microsecond:
-            microsecond = microsecond_
-
-        # Format the year, in case its a two digit number.
-        # See the format used in RINEX files and navigation elements for more details.
         if year < 80:
-            year = 2000 + year
-        else:
-            1900 + year
+            year += 2000
+        elif year < 100:
+            year += 1900
 
-        # Initialize from the parent method
+        # Validate the whole part of each argument like datetime does, then carry their fractional parts
+        # (i.e. second=1.9 -> second=1, microsecond=900000).
+        day, hour, minute, second, microsecond = (
+            float(day),
+            float(hour),
+            float(minute),
+            float(second),
+            float(microsecond),
+        )
+        whole = datetime(
+            year,
+            int(month),
+            math.floor(day),
+            math.floor(hour),
+            math.floor(minute),
+            math.floor(second),
+            math.floor(microsecond),
+        )
+        date = whole + timedelta(
+            days=day % 1, hours=hour % 1, minutes=minute % 1, seconds=second % 1, microseconds=microsecond % 1
+        )
         return datetime.__new__(
             cls,
-            year,
-            month=month,
-            day=day,
-            hour=hour,
-            minute=minute,
-            second=second,
-            microsecond=microsecond,
-            tzinfo=tzinfo,
+            date.year,
+            date.month,
+            date.day,
+            date.hour,
+            date.minute,
+            date.second,
+            date.microsecond,
+            tzinfo,
             fold=fold,
-            **kwargs,
         )
 
     @property
@@ -237,10 +245,7 @@ class gnsstime(datetime):
         Returns:
             float
         """
-        days = self.doy
-        _, days = divmod(days, 7)
-        seconds = ((days * 24 + self.hour) * 60 + self.minute) * 60 + self.second + self.microsecond / 1e6
-        return seconds
+        return self.seconds0 - self.weeks0 * 604_800.0
 
     @property
     def sod(self) -> float:
@@ -290,27 +295,7 @@ class gnsstime(datetime):
         Returns:
             gnsstime
         """
-        # Find the day and month
-        month = 1
-        while month <= 12 and doy - calendar.monthrange(year, month)[1] > 0:
-            doy -= calendar.monthrange(year, month)[1]
-            month += 1
-        day = doy
-
-        # Find the hour, minute, second, microsecond (if `sod` was a float)
-        hour, rest = divmod(sod, 3600)
-        minute, second = divmod(rest, 60)
-        microsecond, second = math.modf(second)
-
-        # Convert to integers
-        month = math.floor(month)
-        day = math.floor(day)
-        hour = math.floor(hour)
-        minute = math.floor(minute)
-        second = math.floor(second)
-        microsecond, second = math.modf(second)
-        microsecond = math.floor(microsecond * 1e6)
-        return gnsstime(year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
+        return gnsstime(year, 1, 1) + timedelta(days=doy - 1, seconds=sod)
 
     @classmethod
     def frommjd(cls, mjd: float) -> "gnsstime":
@@ -322,9 +307,7 @@ class gnsstime(datetime):
         Returns:
             gnsstime
         """
-        # Seconds from 1970-01-01T00:00:00
-        seconds = (mjd - MJD_2000) * 86_400 + SECONDS_2000
-        return gnsstime.utcfromtimestamp(seconds)
+        return gnsstime(2000, 1, 1, 12) + timedelta(days=mjd - MJD_2000)
 
     @classmethod
     def fromjd(cls, jd: float) -> "gnsstime":
@@ -361,7 +344,7 @@ class gnsstime(datetime):
         Returns:
             gnsstime
         """
-        return gnsstime.utcfromtimestamp(datetime64.astype("O") / 1e9)
+        return to_gnsstime(datetime64)
 
 
 # Reference epochs, as gnsstime so that they can be subtracted from one.
