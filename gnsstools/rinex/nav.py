@@ -7,8 +7,7 @@
 
 
 r"""
-This module handles reading `RINEX` files.
-It was only tested with `RINEX` version 2.10 and 3.03, but should works for any versions.
+This module reads the navigation messages of `RINEX` files, versions 2 and 3.
 """
 
 import re
@@ -17,132 +16,81 @@ from collections import defaultdict
 from gnsstools import gnsstime
 
 from .datasets import NavigationDataFrame
-from .reader import ABCReader, Record
+from .header import RinexHeaderReader
+from .reader import ABCReader, Record, Value
 
 __all__ = ["RinexNavReader"]
 
 
-# TODO: Separate Rinex3 and Rinex2 navigation reader (not much to change: only `read` method for prn.)
+# The fields of a navigation record, line by line: the clock fields of the first line (after the satellite and the
+# date), then the broadcast orbit lines, of 4 fields each.
+GPS_FIELDS = (
+    ("SVClockBias", "SVClockDrift", "SVClockDriftRate"),
+    ("IODE", "Crs", "DeltaN", "M0"),
+    ("Cuc", "e", "Cus", "sqrtA"),
+    ("TOE", "Cic", "Omega0", "Cis"),
+    ("i0", "Crc", "Omega", "OmegaDot"),
+    ("IDOT", "L2Codes", "GPSWeek", "L2Pflag"),
+    ("SVAcc", "SVHealth", "TGD", "IODC"),
+    ("TransTime", "FitInter"),
+)
+GLONASS_FIELDS = (
+    ("SVClockBias", "SVRelFreqBias", "MessageFrameTime"),
+    ("X", "dX", "dX2", "Health"),
+    ("Y", "dY", "dY2", "FreqNum"),
+    ("Z", "dZ", "dZ2", "AgeOpInfo"),
+)
+GALILEO_FIELDS = (
+    ("SVClockBias", "SVClockDrift", "SVClockDriftRate"),
+    ("IODnav", "Crs", "DeltaN", "M0"),
+    ("Cuc", "e", "Cus", "sqrtA"),
+    ("TOE", "Cic", "Omega0", "Cis"),
+    ("i0", "Crc", "Omega", "OmegaDot"),
+    ("IDOT", "GPSWeek", "GALWeek"),
+    ("SISA", "SVHealth", "BGDe5a", "BGDe5b"),
+    ("TransTime",),
+)
+FIELDS = {"G": GPS_FIELDS, "R": GLONASS_FIELDS, "E": GALILEO_FIELDS}
+
+FIELD_WIDTH = 19
+
+
 class RinexNavReader(ABCReader):
     """
-    Handles reading `RINEX3` files.
+    Reads the navigation records of a `RINEX` file, version 2 or 3.
 
     * :attr:`lines` (list): List of lines to process.
+    * :attr:`system` (str, optional): The system of the records of a RINEX 2 file, which holds one system only.
+      Defaults to the system of the header.
 
     """
 
     def __init__(self, lines: list[str], system: str | None = None) -> None:
         super().__init__(lines)
-        self.system = system
+        header = RinexHeaderReader(lines).read()
+        version = header.get("Version")
+        # RINEX 2 records start with a 2-character PRN and a 2-digit year, and are indented by 3 characters instead of
+        # 4: every field sits one character to the left of its RINEX 3 position.
+        self.version2 = isinstance(version, (int, float)) and version < 3
+        header_system = header.get("System")
+        self.system = system or (header_system if isinstance(header_system, str) else None)
 
-    def _extract_g_fields(self) -> Record:
-        lines = self.lines[self._cursor : self._cursor + 8]
-        self._cursor += 8
-        return {
-            # First row
-            "SVClockBias": self._eval(lines[0][23:42]),
-            "SVClockDrift": self._eval(lines[0][42:61]),
-            "SVClockDriftRate": self._eval(lines[0][61:80]),
-            # Second row
-            "IODE": self._eval(lines[1][4:23]),
-            "Crs": self._eval(lines[1][23:42]),
-            "DeltaN": self._eval(lines[1][42:61]),
-            "M0": self._eval(lines[1][61:80]),
-            # Third row
-            "Cuc": self._eval(lines[2][4:23]),
-            "e": self._eval(lines[2][23:42]),
-            "Cus": self._eval(lines[2][42:61]),
-            "sqrtA": self._eval(lines[2][61:80]),
-            # Fourth row
-            "TOE": self._eval(lines[3][4:23]),
-            "Cic": self._eval(lines[3][23:42]),
-            "Omega0": self._eval(lines[3][42:61]),
-            "Cis": self._eval(lines[3][61:80]),
-            # Fifth row
-            "i0": self._eval(lines[4][4:23]),
-            "Crc": self._eval(lines[4][23:42]),
-            "Omega": self._eval(lines[4][42:61]),
-            "OmegaDot": self._eval(lines[4][61:80]),
-            # Sixth row
-            "IDOT": self._eval(lines[5][4:23]),
-            "L2Codes": self._eval(lines[5][23:42]),
-            "GPSWeek": self._eval(lines[5][42:61]),
-            "L2Pflag": self._eval(lines[5][61:80]),
-            # Seventh row
-            "SVAcc": self._eval(lines[6][4:23]),
-            "SVHealth": self._eval(lines[6][23:42]),
-            "TGD": self._eval(lines[6][42:61]),
-            "IODC": self._eval(lines[6][61:80]),
-            # Eight row
-            "TransTime": self._eval(lines[7][4:23]),
-            "FitInter": self._eval(lines[7][23:42]),
-        }
+    def _fields(self, line: str, start: int, names: tuple[str, ...]) -> Record:
+        values: list[Value] = [
+            self._eval(line[start + FIELD_WIDTH * k : start + FIELD_WIDTH * (k + 1)]) for k in range(len(names))
+        ]
+        return dict(zip(names, values, strict=True))
 
-    def _extract_r_fields(self) -> Record:
-        lines = self.lines[self._cursor : self._cursor + 4]
-        self._cursor += 4
-        return {
-            # First row
-            "SVClockBias": self._eval(lines[0][23:42]),
-            "SVRelFreqBias": self._eval(lines[0][42:61]),
-            "MessageFrameTime": self._eval(lines[0][61:80]),
-            # Second row
-            "X": self._eval(lines[1][4:23]),
-            "dX": self._eval(lines[1][23:42]),
-            "dX2": self._eval(lines[1][42:61]),
-            "Health": self._eval(lines[1][61:80]),
-            # Third row
-            "Y": self._eval(lines[2][4:23]),
-            "dY": self._eval(lines[2][23:42]),
-            "dY2": self._eval(lines[2][42:61]),
-            "FreqNum": self._eval(lines[2][61:80]),
-            # Fourth row
-            "Z": self._eval(lines[3][4:23]),
-            "dZ": self._eval(lines[3][23:42]),
-            "dZ2": self._eval(lines[3][42:61]),
-            "AgeOpInfo": self._eval(lines[3][61:80]),
-        }
-
-    def _extract_e_fields(self) -> Record:
-        lines = self.lines[self._cursor : self._cursor + 8]
-        self._cursor += 8
-        return {
-            # First row
-            "SVClockBias": self._eval(lines[0][23:42]),
-            "SVClockDrift": self._eval(lines[0][42:61]),
-            "SVClockDriftRate": self._eval(lines[0][61:80]),
-            # Second row
-            "IODnav": self._eval(lines[1][4:23]),
-            "Crs": self._eval(lines[1][23:42]),
-            "DeltaN": self._eval(lines[1][42:61]),
-            "M0": self._eval(lines[1][61:80]),
-            # Third row
-            "Cuc": self._eval(lines[2][4:23]),
-            "e": self._eval(lines[2][23:42]),
-            "Cus": self._eval(lines[2][42:61]),
-            "sqrtA": self._eval(lines[2][61:80]),
-            # Fourth row
-            "TOE": self._eval(lines[3][4:23]),
-            "Cic": self._eval(lines[3][23:42]),
-            "Omega0": self._eval(lines[3][42:61]),
-            "Cis": self._eval(lines[3][61:80]),
-            # Fifth row
-            "i0": self._eval(lines[4][4:23]),
-            "Crc": self._eval(lines[4][23:42]),
-            "Omega": self._eval(lines[4][42:61]),
-            "OmegaDot": self._eval(lines[4][61:80]),
-            # Sixth row
-            "IDOT": self._eval(lines[5][4:23]),
-            "GPSWeek": self._eval(lines[5][23:42]),
-            "GALWeek": self._eval(lines[5][42:61]),
-            # Seventh row
-            "SISA": self._eval(lines[6][4:23]),
-            "SVHealth": self._eval(lines[6][23:42]),
-            "BGDe5a": self._eval(lines[6][42:61]),
-            "BGDe5b": self._eval(lines[6][61:80]),
-            # Eight row
-            "TransTime": self._eval(lines[7][4:23]),
-        }
+    def _extract_fields(self, system: str) -> Record:
+        """Read the record at the cursor, and move the cursor past it."""
+        fields = FIELDS[system]
+        lines = self.lines[self._cursor : self._cursor + len(fields)]
+        self._cursor += len(fields)
+        shift = 1 if self.version2 else 0
+        data = self._fields(lines[0], 23 - shift, fields[0])
+        for line, names in zip(lines[1:], fields[1:], strict=False):
+            data.update(self._fields(line, 4 - shift, names))
+        return data
 
     def read(self) -> NavigationDataFrame:
         """Read all the lines from a `RINEX` file and return a ``pandas.DataFrame``.
@@ -169,39 +117,30 @@ class RinexNavReader(ABCReader):
                 continue
 
             # Find the associated satellite system
-            # Create the satellite name (e.g. " 03" - > "G03", "G 2" -> "G02")
-            if line[0] == " " or line[0].isdigit():
+            # Create the satellite name (e.g. " 3" - > "G03", "G 2" -> "G02")
+            if self.version2:
                 system_ = self.system or "G"
-                prn = self._eval(line[:3])
-                satellite = f"{system_}{prn}"
+                prn = self._eval(line[:2])
+                line_dates = line[2:22]
             else:
                 system_ = line[0]
                 prn = self._eval(line[1:3])
-                satellite = f"{system_}{prn}"
+                line_dates = line[3:23]
+            satellite = f"{system_}{prn}"
 
-            # If the PRN was not found (unknown satellite or corrupted data)
-            if prn is None:
+            # If the PRN was not found (unknown satellite or corrupted data), or the system is unknown,
+            # read the next line
+            if prn is None or system_ not in FIELDS:
                 self._cursor += 1
                 continue
 
             # Extract the data
-            if system_ == "E":
-                data = self._extract_e_fields()
-            elif system_ == "G":
-                data = self._extract_g_fields()
-            elif system_ == "R":
-                data = self._extract_r_fields()
-
-            # If the system is unknown, read the next line
-            else:
-                self._cursor += 1
-                continue
+            data = self._extract_fields(system_)
 
             # From here we should have found a valid system (satellite with known PRN).
             # Extract the date (year, month, day etc.), common for all systems.
             # Remove redundant spaces and split on spaces (dates are separated by a space (or more...))
-            line_dates = re.sub("  +", " ", line[3:23].strip())
-            year, month, day, hour, minute, second = line_dates.split(" ")
+            year, month, day, hour, minute, second = re.sub("  +", " ", line_dates.strip()).split(" ")
             data["Date"] = gnsstime(year, month, day, hour, minute, second)
 
             # Count PRN and save the data

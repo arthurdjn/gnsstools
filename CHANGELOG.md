@@ -23,9 +23,13 @@ All notable changes to this project are documented in this file. The format is b
 - The package ships its type hints (`py.typed`), checked with `mypy --strict`.
 - `ABCReader.read` and `Satellite.system` are abstract.
 - `NavigationDataFrame.select` raises a `ValueError` when no date is given, instead of a `TypeError`.
+- `rinex.load` accepts `os.PathLike` paths, and reads the system of a RINEX 2 navigation file (GPS, GLONASS, ...)
+  from its header instead of the last letter of its name.
 
 ### Fixed
 
+- RINEX 2 navigation files are read with the RINEX 2 column positions: records with a negative clock bias raised a
+  `ValueError`, and the fields of the others were shifted by one character.
 - `repr()` of a `GALILEO` satellite raised an `AttributeError`. Its `sv_heath` attribute is renamed `sv_health`.
 - `repr()` of a satellite read through the base `Satellite.__repr__` now includes its `toc`.
 - The `georinex` fallback of `rinex.load` returned the first satellite of the file only.

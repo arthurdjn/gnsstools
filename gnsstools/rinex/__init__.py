@@ -5,6 +5,7 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
+import os
 from typing import Any
 
 import pandas as pd
@@ -19,11 +20,11 @@ from .utils import convert_georinex
 __all__ = ["load"]
 
 
-def load(filename: str, *args: Any, force: bool = False, **kwargs: Any) -> pd.DataFrame:
+def load(filename: str | os.PathLike[str], *args: Any, force: bool = False, **kwargs: Any) -> pd.DataFrame:
     """Load any `RINEX` files, from ``.SP3`` and ``.rnx`` to ``.*o`` extensions.
 
     Args:
-        filename (str): Path to the file to open.
+        filename (str or os.PathLike): Path to the file to open.
 
     Returns:
         pandas.DataFrame
@@ -41,6 +42,7 @@ def load(filename: str, *args: Any, force: bool = False, **kwargs: Any) -> pd.Da
         >>> # Load a SP3 file
         >>> df = rinex.load("COM20225_15M.SP3")
     """
+    filename = os.fspath(filename)
     with open(filename) as f:
         lines = f.read().split("\n")
 
@@ -52,12 +54,8 @@ def load(filename: str, *args: Any, force: bool = False, **kwargs: Any) -> pd.Da
     # TODO: georinex is not optimized. Recreate its main functionalities (only 'SP3' and 'crx' reader are missing)
     # Read Navigation data
     if dtype == "N":
-        system = None
-        if filename.endswith("n"):
-            system = "G"
-        elif filename.endswith("g"):
-            system = "R"
-        df = RinexNavReader(lines, system=system).read()
+        # The system of a RINEX 2 file (GPS, GLONASS, ...) is read from its header.
+        df = RinexNavReader(lines).read()
         df.attrs = dict(header.items())
 
     # Read observation data

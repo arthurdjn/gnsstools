@@ -12,7 +12,7 @@ from gnsstools.rinex.obs2 import Rinex2ObsReader
 from gnsstools.rinex.obs3 import Rinex3ObsReader
 from gnsstools.rinex.utils import convert_georinex
 
-from .conftest import NAV2, OBS2, OBS3, record
+from .conftest import NAV2, NAV2_GLONASS, NAV3, OBS2, OBS3, record
 
 INDEX = ["System", "PRN", "Date"]
 
@@ -69,11 +69,19 @@ def test_navigation_galileo_data_sources(nav3: NavigationDataFrame) -> None:
     assert set(records["DataSources"]) == {258.0, 517.0}
 
 
-@pytest.mark.xfail(raises=ValueError, reason="RINEX 2 navigation records are sliced with the RINEX 3 column offsets")
-def test_rinex2_navigation_matches_rinex3(nav3: NavigationDataFrame) -> None:
-    nav2 = rinex.load(str(NAV2))
-    gps = nav3.loc[["G"]].dropna(axis=1, how="all")
-    pd.testing.assert_frame_equal(nav2[gps.columns], gps, check_frame_type=False)
+@pytest.mark.parametrize(("path", "system"), [(NAV2, "G"), (NAV2_GLONASS, "R")])
+def test_rinex2_navigation_matches_rinex3(nav3: NavigationDataFrame, path: Path, system: str) -> None:
+    # The RINEX 2 files hold the same records as the RINEX 3 one, with the RINEX 2 layout.
+    nav2 = rinex.load(path)
+    assert isinstance(nav2, NavigationDataFrame)
+    assert nav2.attrs["Version"] == 2.11
+    assert nav2.attrs["System"] == system
+    expected = nav3.loc[[system]].dropna(axis=1, how="all")
+    pd.testing.assert_frame_equal(nav2[expected.columns], expected, check_frame_type=False)
+
+
+def test_load_accepts_paths(nav3: NavigationDataFrame) -> None:
+    pd.testing.assert_frame_equal(rinex.load(NAV3), nav3)
 
 
 def test_rinex2_observation(obs2: ObservationDataFrame) -> None:
