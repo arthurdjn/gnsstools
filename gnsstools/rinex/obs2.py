@@ -6,21 +6,19 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-# Basic imports
-from collections import defaultdict
-import re
 import math
-import numpy as np
-import pandas as pd
+import re
+from collections import defaultdict
 
-# GNSS Tools
-from .reader import ABCReader
-from .datasets import ObservationDataFrame
+import numpy as np
+
 from gnsstools import gnsstime
+
+from .datasets import ObservationDataFrame
+from .reader import ABCReader
 
 
 class Rinex2ObsReader(ABCReader):
-
     def __init__(self, lines):
         super().__init__(lines)
 
@@ -65,7 +63,6 @@ class Rinex2ObsReader(ABCReader):
         # If the date is not valid, exit the function.
         date = gnsstime(year, month, day, hour, minute, second)
 
-        sat_row = math.ceil(sat_num / 12)
         while len(satellites_name) < sat_num:
             line = self.lines[self._cursor]
             satellites_sequence = line[32:68]
@@ -73,10 +70,10 @@ class Rinex2ObsReader(ABCReader):
             # There are maximum 12 satellites in per row (e.g. "G02G06G12G14G19G24G25G29G31G32S23S36")
             for isat in range(12):
                 # Extract and save the id of the satellite
-                satellite = satellites_sequence[isat * 3:(isat + 1) * 3].strip()
+                satellite = satellites_sequence[isat * 3 : (isat + 1) * 3].strip()
                 if satellite != "":
                     # Replace blank space by 0 (e.g. "G 2" -> "G02")
-                    satellite = re.sub(f"[A-Z][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), satellite)
+                    satellite = re.sub(r"[A-Z][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), satellite)
                     satellites_name.append(satellite)
             self._cursor += 1
 
@@ -97,9 +94,9 @@ class Rinex2ObsReader(ABCReader):
                 if irow * 5 + ifield < len(fields):
                     # Extract the value for a specific field / observation.
                     field = fields[irow * 5 + ifield]
-                    value = line[ifield * 16: (ifield + 1) * 16]
+                    value = line[ifield * 16 : (ifield + 1) * 16]
                     # Replace blank space in the number by 0 (e.g. " 12223.444 42" -> " 12223.444042")
-                    value = re.sub(f"[0-9\-][\s][0-9\-]", lambda x: x.group(0).replace(" ", "0"), value)
+                    value = re.sub(r"[0-9\-][\s][0-9\-]", lambda x: x.group(0).replace(" ", "0"), value)
                     data[field] = self._eval(value)
 
             # Read next line or exit.
@@ -134,7 +131,7 @@ class Rinex2ObsReader(ABCReader):
 
         # Create the DataFrame
         df_data = []
-        for satellites, values in satellites.items():
+        for values in satellites.values():
             df_data.extend(values)
         df = ObservationDataFrame(df_data)
         # Make it pretty

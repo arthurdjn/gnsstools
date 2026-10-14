@@ -6,11 +6,9 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-# Basic imports
 import numpy as np
 
-# GNSS Tools
-from gnsstools.const import mu, F
+from gnsstools.const import F, mu
 
 
 def get_satellite_position(satellite, date):
@@ -34,11 +32,11 @@ def get_satellite_position(satellite, date):
         max_steps -= 1
 
     # Compute satellite true anomaly.
-    v_ = np.sqrt((1 + satellite.e) / (1 - satellite.e)) * np.tan(E/2)
+    v_ = np.sqrt((1 + satellite.e) / (1 - satellite.e)) * np.tan(E / 2)
     v = 2 * np.arctan(v_)
 
     # Compute distance Earth - Satellite (radius).
-    r = (satellite.sqrt_a)**2 * (1 - satellite.e * np.cos(E))
+    r = (satellite.sqrt_a) ** 2 * (1 - satellite.e * np.cos(E))
     # Compute coordinates in the orbital plane.
     phi = satellite.omega + v
     # Compute corrections.
@@ -56,15 +54,9 @@ def get_satellite_position(satellite, date):
     omega = satellite.omega0 + satellite.omega_dot * dt
 
     # Transform cartesian to geocentric coordinates.
-    Romega = np.array([[np.cos(omega), -np.sin(omega), 0],
-                       [np.sin(omega),  np.cos(omega), 0],
-                       [0,  0, 1]])
-    Ri = np.array([[1, 0, 0],
-                   [0, np.cos(i), -np.sin(i)],
-                   [0, np.sin(i),  np.cos(i)]])
-    Xorb = np.array([[x],
-                     [y],
-                     [0]])
+    Romega = np.array([[np.cos(omega), -np.sin(omega), 0], [np.sin(omega), np.cos(omega), 0], [0, 0, 1]])
+    Ri = np.array([[1, 0, 0], [0, np.cos(i), -np.sin(i)], [0, np.sin(i), np.cos(i)]])
+    Xorb = np.array([[x], [y], [0]])
     X_ECI = np.dot(np.dot(Romega, Ri), Xorb)
 
     # Transform to ECEF cartesian coordinates.
@@ -73,9 +65,13 @@ def get_satellite_position(satellite, date):
     t_sow = date.sow
     if date.weeks0 > satellite.gps_week:
         t_sow += 86_400 * 7
-    R = np.array([[np.cos(omega_e * t_sow), -np.sin(omega_e * t_sow), 0],
-                  [np.sin(omega_e * t_sow),  np.cos(omega_e * t_sow), 0],
-                  [0,  0, 1]])
+    R = np.array(
+        [
+            [np.cos(omega_e * t_sow), -np.sin(omega_e * t_sow), 0],
+            [np.sin(omega_e * t_sow), np.cos(omega_e * t_sow), 0],
+            [0, 0, 1],
+        ]
+    )
     X_ECEF = np.dot(R, X_ECI)
 
     # Compute satellite time error delta.

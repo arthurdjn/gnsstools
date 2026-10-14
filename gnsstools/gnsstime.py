@@ -5,29 +5,51 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
-# Basic imports
-from datetime import datetime, timedelta
 import calendar
 import math
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 
-
-__all__ = [
-    "gnsstime"
-]
+__all__ = ["gnsstime"]
 
 
 DATETIME_1970 = datetime(1970, 1, 1, 0, 0, 0, 0)
 DATETIME_GPS0 = datetime(1980, 1, 6, 0, 0, 0, 0)
 DATETIME_2000 = datetime(2000, 1, 1, 0, 0, 0, 0)
 SECONDS_2000 = 946_728_000.0  # Seconds from 1970-01-01T00:00:00 to 2000-01-01T00:00:00 (UTC)
-MJD_2000 = 51_544.5   # Modified Julian Day at 2000-01-01T00:00:00 (UTC)
+MJD_2000 = 51_544.5  # Modified Julian Day at 2000-01-01T00:00:00 (UTC)
 JD = 2_400_000.5  # Julian Day starting at noon on Monday, January 1, 4713 BC
 JD_2000 = 2_451_545.0  # Julian Day at 2000-01-01T00:00:00 (UTC)
 JD_1950 = 2_433_282.50  # Julian Day at 1950-01-01T00:00:00 (UTC)
-SESSIONS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', '0']
+SESSIONS = [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "0",
+]
 
 
 def to_gnsstime(element):
@@ -37,18 +59,25 @@ def to_gnsstime(element):
 
     elif isinstance(element, pd.Timestamp):
         element = pd.to_datetime(element)
-    
+
     elif isinstance(element, np.datetime64):
-        element = datetime.utcfromtimestamp(element.astype('O') / 1e9)
+        element = datetime.utcfromtimestamp(element.astype("O") / 1e9)
 
     else:
         raise ValueError(f"The element to be converted to gnsstime is unknown. Got type {type(element)}.")
 
-    return gnsstime(year=element.year, month=element.month, day=element.day,
-                    hour=element.hour, minute=element.minute, second=element.second,
-                    microsecond=element.microsecond, tzinfo=element.tzinfo,
-                    fold=element.fold)
-    
+    return gnsstime(
+        year=element.year,
+        month=element.month,
+        day=element.day,
+        hour=element.hour,
+        minute=element.minute,
+        second=element.second,
+        microsecond=element.microsecond,
+        tzinfo=element.tzinfo,
+        fold=element.fold,
+    )
+
 
 class gnsstime(datetime):
     r"""Defines GNSS time, providing built-in functions to fasten date conversion.
@@ -85,8 +114,9 @@ class gnsstime(datetime):
 
     """
 
-    def __new__(cls, year, month=None, day=None,
-                hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0, **kwargs):
+    def __new__(
+        cls, year, month=None, day=None, hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0, **kwargs
+    ):
 
         # Return None if the date is not valid
         if year is None or month is None or day is None:
@@ -116,10 +146,19 @@ class gnsstime(datetime):
             1900 + year
 
         # Initialize from the parent method
-        return datetime.__new__(cls, year, month=month, day=day,
-                                hour=hour, minute=minute, second=second,
-                                microsecond=microsecond,
-                                tzinfo=tzinfo, fold=fold, **kwargs)
+        return datetime.__new__(
+            cls,
+            year,
+            month=month,
+            day=day,
+            hour=hour,
+            minute=minute,
+            second=second,
+            microsecond=microsecond,
+            tzinfo=tzinfo,
+            fold=fold,
+            **kwargs,
+        )
 
     @property
     def session(self):
@@ -156,7 +195,7 @@ class gnsstime(datetime):
 
     @property
     def seconds0(self):
-        r"""Get the number of seconds from :math:`GPS_{origin}`, 
+        r"""Get the number of seconds from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
         Returns:
@@ -166,7 +205,7 @@ class gnsstime(datetime):
 
     @property
     def days0(self):
-        r"""Get the number of days from :math:`GPS_{origin}`, 
+        r"""Get the number of days from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
         Returns:
@@ -177,7 +216,7 @@ class gnsstime(datetime):
 
     @property
     def weeks0(self):
-        r"""Get the number of weeks from :math:`GPS_{origin}`, 
+        r"""Get the number of weeks from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
         Returns:
@@ -188,7 +227,7 @@ class gnsstime(datetime):
 
     @property
     def sow(self):
-        r"""Get the second of the current week. 
+        r"""Get the second of the current week.
 
         Returns:
             float
@@ -200,7 +239,7 @@ class gnsstime(datetime):
 
     @property
     def sod(self):
-        r"""Get the second of the current day. 
+        r"""Get the second of the current day.
 
         Returns:
             float
@@ -210,7 +249,7 @@ class gnsstime(datetime):
 
     @property
     def doy(self):
-        r"""Get the day of the current year. 
+        r"""Get the day of the current year.
 
         Returns:
             int
@@ -223,7 +262,7 @@ class gnsstime(datetime):
 
     @property
     def woy(self):
-        r"""Get the week of the current year. 
+        r"""Get the week of the current year.
 
         Returns:
             float
@@ -238,7 +277,7 @@ class gnsstime(datetime):
 
         Args:
             year (int): The year of the date.
-            doy (int, optional): Day of year. Values must be between :math:`[1, 356]` depending on the year. 
+            doy (int, optional): Day of year. Values must be between :math:`[1, 356]` depending on the year.
                 Defaults to ``1``.
             sod (int, optional): Seconds of the day. Values must be between :math:`[0, 86399]`.
                 Defaults to 0.
@@ -317,4 +356,4 @@ class gnsstime(datetime):
         Returns:
             gnsstime
         """
-        return gnsstime.utcfromtimestamp(datetime64.astype('O') / 1e9)
+        return gnsstime.utcfromtimestamp(datetime64.astype("O") / 1e9)

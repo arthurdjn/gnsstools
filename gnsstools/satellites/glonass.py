@@ -9,12 +9,26 @@ from .satellite import Satellite
 
 
 class GLONASS(Satellite):
-    
-    def __init__(self, prn=None, toc=None,
-                 sv_clock_bias=None, sv_rel_freq_bias=None, message_frame_time=None,
-                 x=None, dx=None, dx2=None, health=None,
-                 y=None, dy=None, dy2=None, freq_num=None,
-                 z=None, dz=None, dz2=None, age_op_info=None):
+    def __init__(
+        self,
+        prn=None,
+        toc=None,
+        sv_clock_bias=None,
+        sv_rel_freq_bias=None,
+        message_frame_time=None,
+        x=None,
+        dx=None,
+        dx2=None,
+        health=None,
+        y=None,
+        dy=None,
+        dy2=None,
+        freq_num=None,
+        z=None,
+        dz=None,
+        dz2=None,
+        age_op_info=None,
+    ):
         super().__init__(prn=prn, toc=toc)
         self.sv_clock_bias = sv_clock_bias
         self.sv_rel_freq_bias = sv_rel_freq_bias
@@ -34,19 +48,21 @@ class GLONASS(Satellite):
         self.dz = dz
         self.dz2 = dz2
         self.age_op_info = age_op_info
-        
+
     @property
     def system(self):
         return "R"
 
     def __repr__(self):
-        rep = f"GLONASS("
+        rep = "GLONASS("
         rep += f"\n  system:              {self.system}"
         rep += f"\n  prn:                 {self.prn:d}"
         rep += f"\n  toc:                 {self.toc} [UTC] (Time Of Clock)"
-        rep += f"\n  sv_clock_bias:      {self.sv_clock_bias: .6e} [s] (-TauN)" 
+        rep += f"\n  sv_clock_bias:      {self.sv_clock_bias: .6e} [s] (-TauN)"
         rep += f"\n  sv_rel_freq_bias:   {self.sv_rel_freq_bias: .6e} [s] (+GammaN)"
-        rep += f"\n  message_frame_time: {self.message_frame_time: .6e} [s] (tk + nd * 86400 in seconds of the UTC week)"
+        rep += (
+            f"\n  message_frame_time: {self.message_frame_time: .6e} [s] (tk + nd * 86400 in seconds of the UTC week)"
+        )
         # Second line
         rep += f"\n  x:                  {self.x: .6e} [km] (satellite position X)"
         rep += f"\n  dx:                 {self.dx: .6e} [km/s] (velocity X dot)"
@@ -62,5 +78,5 @@ class GLONASS(Satellite):
         rep += f"\n  dz:                 {self.dz: .6e} [km/s] (velocity Z dot)"
         rep += f"\n  dz2:                {self.dz2: .6e} [km/s2] (Z acceleration)"
         rep += f"\n  age_op_info:        {self.age_op_info: 13} [days]"
-        rep += f"\n)"
+        rep += "\n)"
         return rep

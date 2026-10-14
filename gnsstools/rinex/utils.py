@@ -7,9 +7,10 @@
 
 
 from collections import defaultdict
-from shapely.geometry import Point
+
 import numpy as np
 import pandas as pd
+from shapely.geometry import Point
 
 
 def convert_georinex(xarray, convert=True):
@@ -47,7 +48,7 @@ def convert_georinex(xarray, convert=True):
                 for value in values:
                     try:
                         points.append(Point(value))
-                    except:
+                    except Exception:
                         points.append(None)
                 values = points
             df_data[variable_name].extend(values)

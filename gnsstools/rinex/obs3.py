@@ -6,20 +6,17 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-# Basic imports
-from collections import defaultdict
-import re
 import math
-import pandas as pd
+import re
+from collections import defaultdict
 
-# GNSS Tools
-from .reader import ABCReader
-from .datasets import ObservationDataFrame
 from gnsstools import gnsstime
+
+from .datasets import ObservationDataFrame
+from .reader import ABCReader
 
 
 class Rinex3ObsReader(ABCReader):
-
     def __init__(self, lines):
         super().__init__(lines)
 
@@ -57,8 +54,8 @@ class Rinex3ObsReader(ABCReader):
         data = {}
         line = self.lines[self._cursor]
         for i, field in enumerate(fields):
-            value = line[4+i + 15*i: 4+i + 15*(i + 1)]
-            value = re.sub(f"[0-9][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), value)
+            value = line[4 + i + 15 * i : 4 + i + 15 * (i + 1)]
+            value = re.sub(r"[0-9][\s][0-9]", lambda x: x.group(0).replace(" ", "0"), value)
             data[field] = self._eval(value)
         return data
 
@@ -76,7 +73,14 @@ class Rinex3ObsReader(ABCReader):
                 continue
             elif line[0] == ">":
                 # Read the date
-                year, month, day, hour, minute, second = line[2:6], line[7:9], line[10:12], line[13:15], line[16:18], line[19:29]
+                year, month, day, hour, minute, second = (
+                    line[2:6],
+                    line[7:9],
+                    line[10:12],
+                    line[13:15],
+                    line[16:18],
+                    line[19:29],
+                )
                 date = gnsstime(year, month, day, hour, minute, second)
                 # Read the number associated to this date. Loop and extract their data.
                 sat_num = self._eval(line[33:35])
@@ -100,7 +104,7 @@ class Rinex3ObsReader(ABCReader):
 
         # Create the DataFrame
         df_data = []
-        for satellites, values in satellites.items():
+        for values in satellites.values():
             df_data.extend(values)
         df = ObservationDataFrame(df_data)
         # Make it pretty

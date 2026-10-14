@@ -5,11 +5,9 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
-# Basic imports
-from abc import ABC
+from abc import ABC, abstractmethod
 
-# GNSS Tools
-from gnsstools.gnsstime import to_gnsstime, gnsstime
+from gnsstools.gnsstime import to_gnsstime
 
 
 class Satellite(ABC):
@@ -18,8 +16,9 @@ class Satellite(ABC):
         self._toc = to_gnsstime(toc)
 
     @property
+    @abstractmethod
     def system(self):
-        return None
+        """The one-letter code of the constellation (e.g. ``"G"`` for GPS)."""
 
     @property
     def prn(self):
@@ -36,7 +35,7 @@ class Satellite(ABC):
         rep = f"{self.__class__.__name__}("
         rep += f"\n  system: {self.system}"
         rep += f"\n  prn: {self.prn}"
-        rep == f"\n  toc: {self.toc}"
+        rep += f"\n  toc: {self.toc}"
         for attr, value in self.__dict__.items():
             if attr[0] != "_":
                 rep += f"\n  {attr}: {value:.6e}"

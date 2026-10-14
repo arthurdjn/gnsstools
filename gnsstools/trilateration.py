@@ -5,27 +5,24 @@
 # Copy_recight (c) 2021 Arthur Dujardin
 
 
-# Basic imports
 import numpy as np
-
-# GNSS ToolBox
-from gnsstools.const import c
 
 
 class Trilateration:
-
     def __init__(self, sat_coords, distances, rec_coords=None, cdt=0, sigma=1):
         # Satellites position
         nb_sat, nb_coords = sat_coords.shape
-        assert nb_sat > 3 and nb_coords == 3, \
-            f"The satellites coordinates must be represented as a matrix of shape (N, 3), where N > 3." \
+        assert nb_sat > 3 and nb_coords == 3, (
+            f"The satellites coordinates must be represented as a matrix of shape (N, 3), where N > 3."
             f"Got a shape of {sat_coords.shape}."
+        )
         self.sat_coords = sat_coords
 
         # Observation distances (Satellites - Receptor)
-        assert len(distances) == len(sat_coords), \
-            f"The length of observed distances should be equals to the number of satellites. " \
+        assert len(distances) == len(sat_coords), (
+            f"The length of observed distances should be equals to the number of satellites. "
             f"Got {len(distances)} distances and {len(sat_coords)} satellites."
+        )
         self.distances = distances.flatten()
 
         # Receptor position
@@ -68,7 +65,7 @@ class Trilateration:
         while max_steps > 0 and abs(sigma0_2_previous - self.sigma0_2) > epsilon:
             # Jacobian matrix
             x_rec, y_rec, z_rec, cdt = x0.flatten()
-            distance = ((x_rec - x_sat)**2 + (y_rec - y_sat)**2 + (z_rec - z_sat)**2)**0.5
+            distance = ((x_rec - x_sat) ** 2 + (y_rec - y_sat) ** 2 + (z_rec - z_sat) ** 2) ** 0.5
             f_prime_x = (x_rec - x_sat) / distance
             f_prime_y = (y_rec - y_sat) / distance
             f_prime_z = (z_rec - z_sat) / distance
