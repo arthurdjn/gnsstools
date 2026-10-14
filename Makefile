@@ -29,8 +29,12 @@ lint: ## Lint the source code and the tests
 lint-fix: ## Lint the source code and the tests, and apply the safe fixes
 	$(CMD) ruff check --fix $(SRC) $(TESTS)
 
+.PHONY: type
+type: ## Type-check the source code and the tests (mypy --strict)
+	$(CMD) mypy
+
 .PHONY: all
-all: format lint-fix ## Run all formatting and linting commands
+all: format lint-fix type ## Run all formatting, linting and type-checking commands
 
 # Tests
 

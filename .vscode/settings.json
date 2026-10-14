@@ -11,8 +11,11 @@
   },
   "ruff.configuration": "${workspaceFolder}/pyproject.toml",
   "ruff.importStrategy": "fromEnvironment",
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "mypy-type-checker.args": ["--config-file=${workspaceFolder}/pyproject.toml"],
   "files.exclude": {
     "**/__pycache__": true,
-    "**/.ruff_cache": true
+    "**/.ruff_cache": true,
+    "**/.mypy_cache": true
   }
 }

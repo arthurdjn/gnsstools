@@ -5,42 +5,46 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
+from datetime import datetime
+
+import numpy as np
+
 from .satellite import Satellite
 
 
 class GALILEO(Satellite):
     def __init__(
         self,
-        prn=None,
-        toc=None,
-        sv_clock_bias=None,
-        sv_clock_drift=None,
-        sv_clock_drift_rate=None,
-        iod_nav=None,
-        crs=None,
-        delta_n=None,
-        m0=None,
-        cuc=None,
-        e=None,
-        cus=None,
-        sqrt_a=None,
-        toe=None,
-        cic=None,
-        omega0=None,
-        cis=None,
-        i0=None,
-        crc=None,
-        omega=None,
-        omega_dot=None,
-        idot=None,
-        gps_week=None,
-        gal_week=None,
-        sisa=None,
-        sv_health=None,
-        bgd_e5a=None,
-        bgd_e5b=None,
-        trans_time=None,
-    ):
+        prn: int | None = None,
+        toc: datetime | np.datetime64 | None = None,
+        sv_clock_bias: float | None = None,
+        sv_clock_drift: float | None = None,
+        sv_clock_drift_rate: float | None = None,
+        iod_nav: float | None = None,
+        crs: float | None = None,
+        delta_n: float | None = None,
+        m0: float | None = None,
+        cuc: float | None = None,
+        e: float | None = None,
+        cus: float | None = None,
+        sqrt_a: float | None = None,
+        toe: float | None = None,
+        cic: float | None = None,
+        omega0: float | None = None,
+        cis: float | None = None,
+        i0: float | None = None,
+        crc: float | None = None,
+        omega: float | None = None,
+        omega_dot: float | None = None,
+        idot: float | None = None,
+        gps_week: float | None = None,
+        gal_week: float | None = None,
+        sisa: float | None = None,
+        sv_health: float | None = None,
+        bgd_e5a: float | None = None,
+        bgd_e5b: float | None = None,
+        trans_time: float | None = None,
+    ) -> None:
         super().__init__(prn=prn, toc=toc)
         # First row
         self.sv_clock_bias = sv_clock_bias
@@ -72,17 +76,17 @@ class GALILEO(Satellite):
         self.gal_week = gal_week
         # Seventh row
         self.sisa = sisa
-        self.sv_heath = sv_health
+        self.sv_health = sv_health
         self.bgd_e5a = bgd_e5a
         self.bgd_e5b = bgd_e5b
         # Eighth row
         self.trans_time = trans_time
 
     @property
-    def system(self):
+    def system(self) -> str:
         return "E"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         rep = "GALILEO("
         # First line
         rep += f"\n  system:               {self.system}"
@@ -113,7 +117,6 @@ class GALILEO(Satellite):
         rep += f"\n  omega_dot:           {self.omega_dot: .6e} [rad/s]"
         # Sixth line
         rep += f"\n  idot:                {self.idot: .6e} [rad/s]"
-        rep += f"\n  l2_codes:            {self.l2_codes: .6e} (codes on L2 channel)"
         rep += f"\n  gal_week:            {self.gal_week: .6e} (to go with TOE)"
         # Seventh line
         rep += f"\n  sisa:                {self.sisa: .6e} [m] (Signal in space accuracy)"

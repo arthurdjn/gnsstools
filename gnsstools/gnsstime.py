@@ -7,17 +7,14 @@
 
 import calendar
 import math
-from datetime import datetime
+from datetime import datetime, tzinfo
+from typing import Any
 
 import numpy as np
-import pandas as pd
 
 __all__ = ["gnsstime"]
 
 
-DATETIME_1970 = datetime(1970, 1, 1, 0, 0, 0, 0)
-DATETIME_GPS0 = datetime(1980, 1, 6, 0, 0, 0, 0)
-DATETIME_2000 = datetime(2000, 1, 1, 0, 0, 0, 0)
 SECONDS_2000 = 946_728_000.0  # Seconds from 1970-01-01T00:00:00 to 2000-01-01T00:00:00 (UTC)
 MJD_2000 = 51_544.5  # Modified Julian Day at 2000-01-01T00:00:00 (UTC)
 JD = 2_400_000.5  # Julian Day starting at noon on Monday, January 1, 4713 BC
@@ -52,13 +49,10 @@ SESSIONS = [
 ]
 
 
-def to_gnsstime(element):
-
-    if isinstance(element, (datetime, gnsstime)):
+def to_gnsstime(element: object) -> "gnsstime":
+    # `gnsstime` and `pandas.Timestamp` are both `datetime` subclasses.
+    if isinstance(element, datetime):
         pass
-
-    elif isinstance(element, pd.Timestamp):
-        element = pd.to_datetime(element)
 
     elif isinstance(element, np.datetime64):
         element = datetime.utcfromtimestamp(element.astype("O") / 1e9)
@@ -115,12 +109,23 @@ class gnsstime(datetime):
     """
 
     def __new__(
-        cls, year, month=None, day=None, hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0, **kwargs
-    ):
+        cls,
+        year: int | float | str | None,
+        month: int | float | str | None = None,
+        day: int | float | str | None = None,
+        hour: int | float | str = 0,
+        minute: int | float | str = 0,
+        second: int | float | str = 0,
+        microsecond: int | float = 0,
+        tzinfo: tzinfo | None = None,
+        *,
+        fold: int = 0,
+        **kwargs: Any,
+    ) -> "gnsstime":
 
         # Return None if the date is not valid
         if year is None or month is None or day is None:
-            return None
+            return None  # type: ignore[return-value]  # Kept for backward compatibility
 
         # Convert the values to integer
         year = int(year)
@@ -161,11 +166,11 @@ class gnsstime(datetime):
         )
 
     @property
-    def session(self):
+    def session(self) -> str:
         return SESSIONS[int(round(self.hour))]
 
     @property
-    def mjd(self):
+    def mjd(self) -> float:
         r"""Get the Modified Julian Day (MJD) relative to 2000-01-01T00:00:00 (UTC).
 
         Returns:
@@ -176,7 +181,7 @@ class gnsstime(datetime):
         return (seconds - SECONDS_2000) / 86_400 + MJD_2000
 
     @property
-    def jd(self):
+    def jd(self) -> float:
         r"""Get the Julian Day (JD) from a UTC datetime.
 
         Returns:
@@ -185,7 +190,7 @@ class gnsstime(datetime):
         return self.mjd + JD
 
     @property
-    def jd50(self):
+    def jd50(self) -> float:
         r"""Get the Julian Day (JD) relative to 1950-01-01T00:00:00 (UTC).
 
         Returns:
@@ -194,7 +199,7 @@ class gnsstime(datetime):
         return self.jd - JD_1950
 
     @property
-    def seconds0(self):
+    def seconds0(self) -> float:
         r"""Get the number of seconds from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
@@ -204,7 +209,7 @@ class gnsstime(datetime):
         return (self - DATETIME_GPS0).total_seconds()
 
     @property
-    def days0(self):
+    def days0(self) -> int:
         r"""Get the number of days from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
@@ -215,7 +220,7 @@ class gnsstime(datetime):
         return math.floor(seconds / 86_400.0)
 
     @property
-    def weeks0(self):
+    def weeks0(self) -> int:
         r"""Get the number of weeks from :math:`GPS_{origin}`,
         defined at 1980-01-06T00:00:00 (UTC).
 
@@ -226,7 +231,7 @@ class gnsstime(datetime):
         return math.floor(seconds / (86_400.0 * 7))
 
     @property
-    def sow(self):
+    def sow(self) -> float:
         r"""Get the second of the current week.
 
         Returns:
@@ -238,7 +243,7 @@ class gnsstime(datetime):
         return seconds
 
     @property
-    def sod(self):
+    def sod(self) -> float:
         r"""Get the second of the current day.
 
         Returns:
@@ -248,7 +253,7 @@ class gnsstime(datetime):
         return seconds
 
     @property
-    def doy(self):
+    def doy(self) -> int:
         r"""Get the day of the current year.
 
         Returns:
@@ -261,7 +266,7 @@ class gnsstime(datetime):
         return math.floor(days)
 
     @property
-    def woy(self):
+    def woy(self) -> int:
         r"""Get the week of the current year.
 
         Returns:
@@ -272,7 +277,7 @@ class gnsstime(datetime):
         return math.floor(weeks)
 
     @classmethod
-    def fromdoy(cls, year, doy=1, sod=0):
+    def fromdoy(cls, year: int, doy: int = 1, sod: float = 0) -> "gnsstime":
         """Generate a ``gnsstime`` object from a year, the day of year, and optionally second of day.
 
         Args:
@@ -308,7 +313,7 @@ class gnsstime(datetime):
         return gnsstime(year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
 
     @classmethod
-    def frommjd(cls, mjd):
+    def frommjd(cls, mjd: float) -> "gnsstime":
         """Generate a ``gnsstime`` object from a Modified Julian Day.
 
         Args:
@@ -322,7 +327,7 @@ class gnsstime(datetime):
         return gnsstime.utcfromtimestamp(seconds)
 
     @classmethod
-    def fromjd(cls, jd):
+    def fromjd(cls, jd: float) -> "gnsstime":
         """Generate a ``gnsstime`` object from a Julian Day.
 
         Args:
@@ -334,7 +339,7 @@ class gnsstime(datetime):
         return gnsstime.frommjd(jd - JD)
 
     @classmethod
-    def fromjd50(cls, jd50):
+    def fromjd50(cls, jd50: float) -> "gnsstime":
         """Generate a ``gnsstime`` object from a Julian Day at 1950.
 
         Args:
@@ -347,7 +352,7 @@ class gnsstime(datetime):
         return gnsstime.fromjd(jd)
 
     @classmethod
-    def fromdatetime64(cls, datetime64):
+    def fromdatetime64(cls, datetime64: np.datetime64) -> "gnsstime":
         """Generate a ``gnsstime`` object from a numpy datetime64.
 
         Args:
@@ -357,3 +362,9 @@ class gnsstime(datetime):
             gnsstime
         """
         return gnsstime.utcfromtimestamp(datetime64.astype("O") / 1e9)
+
+
+# Reference epochs, as gnsstime so that they can be subtracted from one.
+DATETIME_1970 = gnsstime(1970, 1, 1, 0, 0, 0, 0)
+DATETIME_GPS0 = gnsstime(1980, 1, 6, 0, 0, 0, 0)
+DATETIME_2000 = gnsstime(2000, 1, 1, 0, 0, 0, 0)

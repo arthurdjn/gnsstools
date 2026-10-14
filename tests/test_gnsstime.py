@@ -12,6 +12,9 @@ from gnsstools.gnsstime import to_gnsstime
 GPS_WEEK = 2022
 GPS_SOW = 432_000.0
 
+# Year, month, day, hour, minute and second.
+DateArgs = tuple[int | str, int | str, int | str, int | str, int | str, int | str]
+
 
 def test_is_a_datetime() -> None:
     date = gnsstime(2018, 10, 12, 1, 0, 15)
@@ -28,7 +31,7 @@ def test_is_a_datetime() -> None:
         ("2018", "10", "12", "01", "00", "15.0000000"),
     ],
 )
-def test_parses_strings_and_two_digit_years(args: tuple[int | str, ...]) -> None:
+def test_parses_strings_and_two_digit_years(args: DateArgs) -> None:
     assert gnsstime(*args) == datetime(2018, 10, 12, 1, 0, 15)
 
 

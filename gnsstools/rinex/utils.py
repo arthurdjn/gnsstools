@@ -7,13 +7,20 @@
 
 
 from collections import defaultdict
+from collections.abc import Hashable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 from shapely.geometry import Point
 
+if TYPE_CHECKING:
+    # Only installed with the georinex extra.
+    import xarray as xr
 
-def convert_georinex(xarray, convert=True):
+
+def convert_georinex(xarray: "xr.Dataset", convert: bool = True) -> pd.DataFrame:
 
     # If the dataset does not have "sv" and "time" coordinates, or have more than 3 coordinates,
     # the default DataFrame is constructed.
@@ -23,7 +30,7 @@ def convert_georinex(xarray, convert=True):
         df.attrs = xarray.attrs
         return df
 
-    df_data = defaultdict(list)
+    df_data: defaultdict[Hashable, list[Any]] = defaultdict(list)
     variable_names = xarray.keys()
 
     for sv_index, sv in enumerate(xarray.sv):
@@ -31,20 +38,20 @@ def convert_georinex(xarray, convert=True):
         # The idea is to search for variable names that are NOT NaN over time.
         # It is assumed that all variable names for a satellite are filled, i.e. a GPS (e.g. "G01") will have
         # all its variable names (e.g. "SVclockBias", "position" etc.) associated to a value that is NOT NaN.
-        time_indexes = []
+        time_indexes: NDArray[np.intp] = np.array([], dtype=np.intp)
         for variable_name in variable_names:
-            variable = getattr(xarray, variable_name)
+            variable = xarray[variable_name]
             time_indexes = np.argwhere(~np.isnan(np.array(variable[:, sv_index]))).flatten()
             if len(time_indexes) > 0:
                 break
 
         # Retrieve the variable_names per PRN (satellite) and session id.
         for variable_name in variable_names:
-            variable = getattr(xarray, variable_name)
-            values = list(np.array(variable[time_indexes, sv_index]))
+            variable = xarray[variable_name]
+            values: list[Any] = list(np.array(variable[time_indexes, sv_index]))
             # If the values are 3D, convert them to shapely Point.
             if len(variable.dims) == 3:
-                points = []
+                points: list[Point | None] = []
                 for value in values:
                     try:
                         points.append(Point(value))
@@ -62,11 +69,11 @@ def convert_georinex(xarray, convert=True):
         df_data["System"].extend([system] * len(time_indexes))
         df_data["PRN"].extend([prn] * len(time_indexes))
 
-        # Create the DataFrame
-        df = pd.DataFrame(df_data)
-        # Make it pretty
-        df = df.set_index(["System", "PRN", "Date"])
-        columns = sorted([col for col in df.columns])
-        df = df.reindex(columns, axis=1)
-        df = df.sort_index()
-        return df
+    # Create the DataFrame
+    df = pd.DataFrame(df_data)
+    # Make it pretty
+    df = df.set_index(["System", "PRN", "Date"])
+    columns = sorted([col for col in df.columns])
+    df = df.reindex(columns, axis=1)
+    df = df.sort_index()
+    return df

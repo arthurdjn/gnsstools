@@ -9,7 +9,7 @@
 
 from collections import OrderedDict
 
-from .reader import ABCReader
+from .reader import ABCReader, Value
 
 DATA_TYPES = {"N": "NAVIGATION", "O": "OBSERVATION"}
 
@@ -21,11 +21,11 @@ CORR_TO_SYSTEM_TIME_FIELDS = [("year", "2:6"), ("month", "10:12"), ("day", "16:1
 
 # TODO: Separate Rinex2 and Rinex3 header reader
 class RinexHeaderReader(ABCReader):
-    def __init__(self, lines):
+    def __init__(self, lines: list[str]) -> None:
         super().__init__(lines)
 
-    def _read_version(self, line):
-        data = OrderedDict()
+    def _read_version(self, line: str) -> dict[str, Value]:
+        data: dict[str, Value] = OrderedDict()
 
         # Extract the data
         version, dtype_string, system_string = line[:20], line[20:40], line[40:60]
@@ -56,12 +56,12 @@ class RinexHeaderReader(ABCReader):
 
         return data
 
-    def _read_pgm(self, line):
+    def _read_pgm(self, line: str) -> dict[str, Value]:
         return {"PGM": self._eval(line[:20]), "RunBy": self._eval(line[20:40]), "Date": self._eval(line[40:60])}
 
-    def read(self):
+    def read(self) -> dict[str, Value]:
         self._cursor = 0
-        header = OrderedDict()
+        header: dict[str, Value] = OrderedDict()
         # Category of the metadata (e.g. "RINEX VERSION / TYPE")
         category = None
         while self._cursor < len(self.lines) and category != "END OF HEADER":
