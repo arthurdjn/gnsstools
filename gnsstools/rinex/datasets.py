@@ -14,7 +14,64 @@ import pandas as pd
 
 from gnsstools.gnsstime import to_gnsstime
 from gnsstools.satellites import GALILEO, GLONASS, GPS, Satellite
-from gnsstools.utils import camel2snake
+
+# The attribute of the satellite classes (`gnsstools.satellites`) for each field of the navigation records.
+ATTRIBUTES = {
+    # GPS, Galileo and GLONASS
+    "SVClockBias": "sv_clock_bias",
+    "SVClockDrift": "sv_clock_drift",
+    "SVClockDriftRate": "sv_clock_drift_rate",
+    "IODE": "iode",
+    "Crs": "crs",
+    "DeltaN": "delta_n",
+    "M0": "m0",
+    "Cuc": "cuc",
+    "e": "e",
+    "Cus": "cus",
+    "sqrtA": "sqrt_a",
+    "TOE": "toe",
+    "Cic": "cic",
+    "Omega0": "omega0",
+    "Cis": "cis",
+    "i0": "i0",
+    "Crc": "crc",
+    "Omega": "omega",
+    "OmegaDot": "omega_dot",
+    "IDOT": "idot",
+    "L2Codes": "l2_codes",
+    "GPSWeek": "gps_week",
+    "L2Pflag": "l2_pflag",
+    "SVAcc": "sv_acc",
+    "SVHealth": "sv_health",
+    "TGD": "tgd",
+    "IODC": "iodc",
+    "TransTime": "trans_time",
+    "FitInter": "fit_inter",
+    "IODnav": "iod_nav",
+    "DataSources": "data_sources",
+    "GALWeek": "gal_week",
+    "SISA": "sisa",
+    "BGDe5a": "bgd_e5a",
+    "BGDe5b": "bgd_e5b",
+    # GLONASS
+    "SVRelFreqBias": "sv_rel_freq_bias",
+    "MessageFrameTime": "message_frame_time",
+    "X": "x",
+    "dX": "dx",
+    "dX2": "dx2",
+    "Health": "health",
+    "Y": "y",
+    "dY": "dy",
+    "dY2": "dy2",
+    "FreqNum": "freq_num",
+    "Z": "z",
+    "dZ": "dz",
+    "dZ2": "dz2",
+    "AgeOpInfo": "age_op_info",
+}
+
+# Ephemerides further than this from the requested date are rejected by `NavigationDataFrame.select`.
+MAX_OFFSET = 2 * 3600.0
 
 
 class NavigationDataFrame(pd.DataFrame):
@@ -22,51 +79,48 @@ class NavigationDataFrame(pd.DataFrame):
     def _constructor(self) -> type["NavigationDataFrame"]:
         return NavigationDataFrame
 
-    def select(
-        self,
-        system: str | None = None,
-        prn: int | None = None,
-        date: datetime | None = None,
-        ignore_offset: bool = False,
-    ) -> Satellite | None:
-        # Make sure the arguments are available.
-        systems = np.unique(self.index.get_level_values("System"))
-        prns = np.unique(self.index.get_level_values("PRN"))
-        assert system in systems, (
-            f"The provided system {system} was not found in the dataset. Available systems are {', '.join(systems)}."
-        )
-        assert prn in prns, (
-            f"The provided PRN {prn} was not found in the dataset. Available PRNs are {', '.join(prns.astype('str'))}."
-        )
-        # Neither contains None, so both arguments are set from here.
-        assert system is not None and prn is not None
-        if date is None:
-            raise ValueError("A date is required to select an ephemeris.")
+    def select(self, system: str, prn: int, date: datetime, ignore_offset: bool = False) -> Satellite | None:
+        """Select the ephemeris of a satellite that is the closest to a date.
+
+        Args:
+            system (str): The system of the satellite, e.g. ``"G"`` for GPS.
+            prn (int): The PRN of the satellite.
+            date (datetime): The date of the ephemeris to look for.
+            ignore_offset (bool, optional): Return the closest ephemeris even when it is 2 hours or more away from
+                ``date``. Defaults to ``False``.
+
+        Returns:
+            Satellite: A ``GPS``, ``GLONASS`` or ``GALILEO`` instance, or ``None`` for the other systems. When several
+            records share the closest epoch (e.g. the F/NAV and I/NAV messages of Galileo), the first one is used.
+
+        Raises:
+            ValueError: If the satellite is not in the DataFrame, or if its closest ephemeris is 2 hours or more away
+                from ``date`` (unless ``ignore_offset`` is set).
+        """
+        satellites = self.index.droplevel("Date").unique()
+        if (system, prn) not in satellites:
+            available = ", ".join(f"{system_}{prn_:02d}" for system_, prn_ in satellites)
+            raise ValueError(
+                f"The satellite {system}{prn:02d} is not in the dataset. Available satellites: {available}."
+            )
 
         # Find the closest time to the provided `date`.
-        sub_df = self.loc[(system, prn), :]
-        deltas = []
-        for date_ in sub_df.index.get_level_values("Date"):
-            date_ = to_gnsstime(date_)
-            deltas.append(np.abs((date - date_).total_seconds()))
-        offset = np.min(deltas)
-        date = sub_df.index[int(np.argmin(deltas))]
-        # The time coverage should be lower than 2 hours.
-        if not ignore_offset:
-            assert offset / 3600 < 2, (
-                f"The provided date does not overlap with dates from {system}{prn} satellite. "
-                f"There must be a time delta of 2h at least. "
-                f"Got a time delta of {offset / 3600:.2f} hours. "
-                f"The closest date is {date}. You can ignore this behavior with `ignore_offset=True`."
+        records = self.loc[(system, prn), :]
+        offsets = [abs((date - to_gnsstime(date_)).total_seconds()) for date_ in records.index]
+        closest = int(np.argmin(offsets))
+        toc = to_gnsstime(records.index[closest])
+        if not ignore_offset and offsets[closest] >= MAX_OFFSET:
+            raise ValueError(
+                f"The closest ephemeris of {system}{prn:02d} is {offsets[closest] / 3600:.2f} hours away from {date} "
+                f"({toc}), and must be less than {MAX_OFFSET / 3600:.0f} hours away. "
+                "You can ignore this behavior with `ignore_offset=True`."
             )
-        # Get the row and drop NaNs
-        data = self.loc[(system, prn, date), :].squeeze()
-        arguments: dict[str, Any] = {"prn": int(prn), "toc": to_gnsstime(date)}
-        # When several records share the epoch (e.g. the F/NAV and I/NAV messages of Galileo), `data` is a DataFrame
-        # whose rows all have NaNs, and the satellite gets no ephemeris (known bug, see tests/test_satellites.py).
-        if isinstance(data, pd.Series):
-            for arg, value in data.dropna().items():
-                arguments[camel2snake(str(arg))] = value
+
+        # Get the row and drop the fields of the other systems.
+        data = records.iloc[closest].dropna()
+        arguments: dict[str, Any] = {"prn": int(prn), "toc": toc}
+        for field, value in data.items():
+            arguments[ATTRIBUTES[str(field)]] = value
 
         # Create a satellite instance.
         if system == "G":

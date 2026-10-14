@@ -38,7 +38,12 @@ def get_satellite_position(satellite: GPS | GALILEO, date: gnsstime) -> tuple[ND
     idot = _required(satellite.idot, "idot")
     omega0 = _required(satellite.omega0, "omega0")
     omega_dot = _required(satellite.omega_dot, "omega_dot")
-    gps_week = _required(satellite.gps_week, "gps_week")
+    # Galileo weeks are numbered like GPS weeks.
+    week = (
+        _required(satellite.gps_week, "gps_week")
+        if isinstance(satellite, GPS)
+        else _required(satellite.gal_week, "gal_week")
+    )
     sv_clock_bias = _required(satellite.sv_clock_bias, "sv_clock_bias")
     sv_clock_drift = _required(satellite.sv_clock_drift, "sv_clock_drift")
     sv_clock_drift_rate = _required(satellite.sv_clock_drift_rate, "sv_clock_drift_rate")
@@ -94,7 +99,7 @@ def get_satellite_position(satellite: GPS | GALILEO, date: gnsstime) -> tuple[ND
     omega_e = -7.2921151467e-5
 
     t_sow = date.sow
-    if date.weeks0 > gps_week:
+    if date.weeks0 > week:
         t_sow += 86_400 * 7
     R = np.array(
         [

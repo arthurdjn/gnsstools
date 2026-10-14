@@ -22,12 +22,20 @@ All notable changes to this project are documented in this file. The format is b
   `georinex` is an optional extra: `pip install "gnsstools[georinex]"`.
 - The package ships its type hints (`py.typed`), checked with `mypy --strict`.
 - `ABCReader.read` and `Satellite.system` are abstract.
-- `NavigationDataFrame.select` raises a `ValueError` when no date is given, instead of a `TypeError`.
+- `NavigationDataFrame.select` takes the system, the PRN and the date as required arguments, and raises a `ValueError`
+  instead of an `AssertionError` when the satellite is not in the DataFrame or its closest ephemeris is 2 hours or more
+  away from the date.
+- The data sources field of the Galileo navigation records is read into a `DataSources` column instead of `GPSWeek`,
+  and `GALILEO` takes a `data_sources` argument instead of `gps_week`.
 - `rinex.load` accepts `os.PathLike` paths, and reads the system of a RINEX 2 navigation file (GPS, GLONASS, ...)
   from its header instead of the last letter of its name.
 
 ### Fixed
 
+- `NavigationDataFrame.select` returned a satellite without ephemeris when several records share the closest epoch,
+  like the F/NAV and I/NAV messages of Galileo in the merged IGS files. It uses the first record.
+- `get_satellite_position` used the data sources field as the week of Galileo satellites: their positions were off by
+  a week of Earth rotation.
 - The RINEX 2 and RINEX 3 observation readers no longer append the loss of lock indicator and the signal strength to
   the value (`125339261.645 6` was read `125339261.64506`). The RINEX 3 reader also read the values one column late,
   which cut the first digit of values with 10 integer digits, and the number of satellites of an epoch from 2
