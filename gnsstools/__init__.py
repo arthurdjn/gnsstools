@@ -4,12 +4,10 @@
 # ------
 # Copyright (c) 2021 Arthur Dujardin
 
-# Basic imports
 from importlib.metadata import version as _version
 
 from .gnsstime import gnsstime
 from .trilateration import Trilateration
-
 
 __all__ = [
     "__version__",

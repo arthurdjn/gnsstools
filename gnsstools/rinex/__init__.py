@@ -5,9 +5,6 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
-# Basic imports
-
-# GNSS Tools
 from .header import RinexHeaderReader
 from .nav import RinexNavReader
 from .obs2 import Rinex2ObsReader
@@ -15,10 +12,7 @@ from .obs3 import Rinex3ObsReader
 from .sp3 import SP3Reader
 from .utils import convert_georinex
 
-
-__all__ = [
-    "load"
-]
+__all__ = ["load"]
 
 
 def load(filename, *args, force=False, **kwargs):
@@ -43,7 +37,7 @@ def load(filename, *args, force=False, **kwargs):
         >>> # Load a SP3 file
         >>> df = rinex.load("COM20225_15M.SP3")
     """
-    with open(filename, "r") as f:
+    with open(filename) as f:
         lines = f.read().split("\n")
 
     reader = RinexHeaderReader(lines)
@@ -80,7 +74,7 @@ def load(filename, *args, force=False, **kwargs):
         reader = SP3Reader(lines)
         df = reader.read()
         df.attrs = header
-    
+
     # Read with GeoRinex package
     else:
         try:

@@ -7,38 +7,20 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-# Basic imports
 from collections import OrderedDict
-import math
-import re
 
-# GNSS Tools
 from .reader import ABCReader
 
-
-DATA_TYPES = {
-    "N": "NAVIGATION",
-    "O": "OBSERVATION"
-}
+DATA_TYPES = {"N": "NAVIGATION", "O": "OBSERVATION"}
 
 
-SYSTEMS = {
-    "G": "GPS",
-    "E": "GALILEO",
-    "R": "GLONASS",
-    "J": "QZSS",
-    "C": "BDS",
-    "I": "IRNSS",
-    "S": "SBAS",
-    "M": "MIXED"
-}
+SYSTEMS = {"G": "GPS", "E": "GALILEO", "R": "GLONASS", "J": "QZSS", "C": "BDS", "I": "IRNSS", "S": "SBAS", "M": "MIXED"}
 
 CORR_TO_SYSTEM_TIME_FIELDS = [("year", "2:6"), ("month", "10:12"), ("day", "16:18"), ("Unknown", "22:39")]
 
 
 # TODO: Separate Rinex2 and Rinex3 header reader
 class RinexHeaderReader(ABCReader):
-
     def __init__(self, lines):
         super().__init__(lines)
 
@@ -75,11 +57,7 @@ class RinexHeaderReader(ABCReader):
         return data
 
     def _read_pgm(self, line):
-        return {
-            "PGM": self._eval(line[:20]),
-            "RunBy": self._eval(line[20:40]),
-            "Date": self._eval(line[40:60])
-        }
+        return {"PGM": self._eval(line[:20]), "RunBy": self._eval(line[20:40]), "Date": self._eval(line[40:60])}
 
     def read(self):
         self._cursor = 0

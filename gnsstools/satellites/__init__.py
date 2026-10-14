@@ -5,7 +5,14 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
-from .satellite import Satellite
+from .galileo import GALILEO
 from .glonass import GLONASS
 from .gps import GPS
-from .galileo import GALILEO
+from .satellite import Satellite
+
+__all__ = [
+    "GALILEO",
+    "GLONASS",
+    "GPS",
+    "Satellite",
+]

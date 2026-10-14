@@ -6,17 +6,19 @@
 # Copyright (c) 2021, Makina Corpus
 
 
-# Basic imports
-from abc import ABC
 import re
+from abc import ABC, abstractmethod
 
 
 class ABCReader(ABC):
-
     def __init__(self, lines):
         super().__init__()
         self.lines = lines
         self._cursor = 0
+
+    @abstractmethod
+    def read(self):
+        """Parse the lines of the file."""
 
     @staticmethod
     def _eval(string):
@@ -50,7 +52,7 @@ class ABCReader(ABC):
         try:
             string = re.sub("[Dd]", "e", string)
             return float(string)
-        except:
+        except ValueError:
             pass
         # Else, return the stripped string
         return str(string)

@@ -7,25 +7,19 @@
 
 
 r"""
-This module handles reading `RINEX` files. 
+This module handles reading `RINEX` files.
 It was only tested with `RINEX` version 2.10 and 3.03, but should works for any versions.
 """
 
-
-# Basic imports
 import re
 from collections import defaultdict
-import pandas as pd
 
-# gnsstime
-from .reader import ABCReader
-from .datasets import NavigationDataFrame
 from gnsstools import gnsstime
 
+from .datasets import NavigationDataFrame
+from .reader import ABCReader
 
-__all__ = [
-    "RinexNavReader"
-]
+__all__ = ["RinexNavReader"]
 
 
 # TODO: Separate Rinex3 and Rinex2 navigation reader (not much to change: only `read` method for prn.)
@@ -42,7 +36,7 @@ class RinexNavReader(ABCReader):
         self.system = system
 
     def _extract_g_fields(self):
-        lines = self.lines[self._cursor:self._cursor+8]
+        lines = self.lines[self._cursor : self._cursor + 8]
         self._cursor += 8
         return {
             # First row
@@ -85,7 +79,7 @@ class RinexNavReader(ABCReader):
         }
 
     def _extract_r_fields(self):
-        lines = self.lines[self._cursor:self._cursor+4]
+        lines = self.lines[self._cursor : self._cursor + 4]
         self._cursor += 4
         return {
             # First row
@@ -110,7 +104,7 @@ class RinexNavReader(ABCReader):
         }
 
     def _extract_e_fields(self):
-        lines = self.lines[self._cursor:self._cursor+8]
+        lines = self.lines[self._cursor : self._cursor + 8]
         self._cursor += 8
         return {
             # First row
@@ -217,7 +211,7 @@ class RinexNavReader(ABCReader):
 
         # Create the DataFrame
         df_data = []
-        for satellites, values in satellites.items():
+        for values in satellites.values():
             df_data.extend(values)
         df = NavigationDataFrame(df_data)
         # Make it pretty

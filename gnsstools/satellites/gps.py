@@ -5,27 +5,44 @@
 # Copyright (c) 2021 Arthur Dujardin
 
 
-# Basic imports
-import numpy as np
-import pandas as pd
-
-# GNSS Tools
 from .satellite import Satellite
-from gnsstools import gnsstime
-from gnsstools.utils import camel2snake
 
 
 class GPS(Satellite):
-
-    def __init__(self, prn=None, toc=None,
-                 sv_clock_bias=None, sv_clock_drift=None, sv_clock_drift_rate=None,
-                 iode=None, crs=None, delta_n=None, m0=None,
-                 cuc=None, e=None, cus=None, sqrt_a=None,
-                 toe=None, cic=None, omega0=None, cis=None,
-                 i0=None, crc=None, omega=None, omega_dot=None,
-                 idot=None, l2_codes=None, gps_week=None, l2_pflag=None,
-                 sv_acc=None, sv_health=None, tgd=None, iodc=None,
-                 trans_time=None, fit_inter=None):
+    def __init__(
+        self,
+        prn=None,
+        toc=None,
+        sv_clock_bias=None,
+        sv_clock_drift=None,
+        sv_clock_drift_rate=None,
+        iode=None,
+        crs=None,
+        delta_n=None,
+        m0=None,
+        cuc=None,
+        e=None,
+        cus=None,
+        sqrt_a=None,
+        toe=None,
+        cic=None,
+        omega0=None,
+        cis=None,
+        i0=None,
+        crc=None,
+        omega=None,
+        omega_dot=None,
+        idot=None,
+        l2_codes=None,
+        gps_week=None,
+        l2_pflag=None,
+        sv_acc=None,
+        sv_health=None,
+        tgd=None,
+        iodc=None,
+        trans_time=None,
+        fit_inter=None,
+    ):
         super().__init__(prn=prn, toc=toc)
         # First row
         self.sv_clock_bias = sv_clock_bias
@@ -70,7 +87,7 @@ class GPS(Satellite):
         return "G"
 
     def __repr__(self):
-        rep = f"GPS("
+        rep = "GPS("
         # First line
         rep += f"\n  system:               {self.system}"
         rep += f"\n  prn:                  {self.prn:d}"
@@ -111,5 +128,5 @@ class GPS(Satellite):
         # Eighth line
         rep += f"\n  trans_time:          {self.trans_time: .6e} [sec of GPS week] (e.g. derived from Z-count in Hand Over Word (HOW))"
         rep += f"\n  fit_inter:           {self.fit_inter: .6e} [hours] (Fit Interval in hours)"
-        rep += f"\n)"
+        rep += "\n)"
         return rep

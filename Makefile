@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 
 PACKAGE:=gnsstools
+SRC:=$(PACKAGE)
 CMD:=uv run --no-sync
 
 # Environment
@@ -12,6 +13,23 @@ install: ## Create .venv with the package, its extras and the development tools
 .PHONY: lock
 lock: ## Update uv.lock after editing the dependencies in pyproject.toml
 	uv lock
+
+# Linting, formatting, etc.
+
+.PHONY: format
+format: ## Format the source code
+	$(CMD) ruff format $(SRC)
+
+.PHONY: lint
+lint: ## Lint the source code
+	$(CMD) ruff check $(SRC)
+
+.PHONY: lint-fix
+lint-fix: ## Lint the source code and apply the safe fixes
+	$(CMD) ruff check --fix $(SRC)
+
+.PHONY: all
+all: format lint-fix ## Run all formatting and linting commands
 
 # Packaging
 

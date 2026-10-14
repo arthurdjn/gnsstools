@@ -9,16 +9,38 @@ from .satellite import Satellite
 
 
 class GALILEO(Satellite):
-
-    def __init__(self, prn=None, toc=None,
-                 sv_clock_bias=None, sv_clock_drift=None, sv_clock_drift_rate=None,
-                 iod_nav=None, crs=None, delta_n=None, m0=None,
-                 cuc=None, e=None, cus=None, sqrt_a=None,
-                 toe=None, cic=None, omega0=None, cis=None,
-                 i0=None, crc=None, omega=None, omega_dot=None,
-                 idot=None, gps_week=None, gal_week=None,
-                 sisa=None, sv_health=None, bgd_e5a=None, bgd_e5b=None,
-                 trans_time=None):
+    def __init__(
+        self,
+        prn=None,
+        toc=None,
+        sv_clock_bias=None,
+        sv_clock_drift=None,
+        sv_clock_drift_rate=None,
+        iod_nav=None,
+        crs=None,
+        delta_n=None,
+        m0=None,
+        cuc=None,
+        e=None,
+        cus=None,
+        sqrt_a=None,
+        toe=None,
+        cic=None,
+        omega0=None,
+        cis=None,
+        i0=None,
+        crc=None,
+        omega=None,
+        omega_dot=None,
+        idot=None,
+        gps_week=None,
+        gal_week=None,
+        sisa=None,
+        sv_health=None,
+        bgd_e5a=None,
+        bgd_e5b=None,
+        trans_time=None,
+    ):
         super().__init__(prn=prn, toc=toc)
         # First row
         self.sv_clock_bias = sv_clock_bias
@@ -61,7 +83,7 @@ class GALILEO(Satellite):
         return "E"
 
     def __repr__(self):
-        rep = f"GALILEO("
+        rep = "GALILEO("
         # First line
         rep += f"\n  system:               {self.system}"
         rep += f"\n  prn:                  {self.prn:d}"
@@ -100,5 +122,5 @@ class GALILEO(Satellite):
         rep += f"\n  bgd_e5b:             {self.bgd_e5b: .6e} [s] (BGD E5b/E1)"
         # Eighth line
         rep += f"\n  trans_time:          {self.trans_time: .6e} [sec of GAL week] (e.g. derived from WN and TOW of page type 1)"
-        rep += f"\n)"
+        rep += "\n)"
         return rep
