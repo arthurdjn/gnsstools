@@ -227,7 +227,15 @@ filename = "data/COM20225_15M.SP3"
 df = rinex.load(filename)
 ```
 
-![Rinex3 SP3](https://raw.githubusercontent.com/arthurdjn/gnsstools/main/media/rinex3_sp3.png)
+Positions are in meters and clocks in seconds, and the header of the file is in ``df.attrs``:
+
+```
+                                           X            Y            Z         Clock  Session
+System PRN Date
+G      1   2018-10-12 00:00:00 -17852839.089 -6014552.104 18675309.680 -9.926476e-05        1
+           2018-10-12 00:15:00 -18806352.607 -7844840.304 17027746.191 -9.926918e-05        2
+           2018-10-12 00:30:00 -19742315.869 -9449478.234 15086967.467 -9.927360e-05        3
+```
 
 ### Compact
 

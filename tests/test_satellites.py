@@ -107,7 +107,7 @@ def test_broadcast_orbit_matches_precise_orbit(
     assert isinstance(satellite, (GPS, GALILEO))
     position, clock = get_satellite_position(satellite, date)
     precise = record(sp3 if system == "G" else sp3_mgex, (system, prn, date))
-    # Broadcast orbits are good to a few meters. SP3 positions are in kilometers.
-    assert np.linalg.norm(position - np.array(precise["Position"].coords[0]) * 1e3) < 3.0
-    # SP3 clocks (microseconds) do not include the periodic relativistic correction, up to ~20 ns for GPS.
-    assert abs(clock - precise["Clock"] * 1e-6) < 30e-9
+    # Broadcast orbits are good to a few meters.
+    assert np.linalg.norm(position - precise[["X", "Y", "Z"]].to_numpy(dtype=float)) < 3.0
+    # SP3 clocks do not include the periodic relativistic correction, up to ~20 ns for GPS.
+    assert abs(clock - precise["Clock"]) < 30e-9
