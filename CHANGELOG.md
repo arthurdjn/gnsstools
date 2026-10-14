@@ -28,6 +28,10 @@ All notable changes to this project are documented in this file. The format is b
 
 ### Fixed
 
+- The RINEX 2 and RINEX 3 observation readers no longer append the loss of lock indicator and the signal strength to
+  the value (`125339261.645 6` was read `125339261.64506`). The RINEX 3 reader also read the values one column late,
+  which cut the first digit of values with 10 integer digits, and the number of satellites of an epoch from 2
+  characters instead of 3.
 - RINEX 2 navigation files are read with the RINEX 2 column positions: records with a negative clock bias raised a
   `ValueError`, and the fields of the others were shifted by one character.
 - `repr()` of a `GALILEO` satellite raised an `AttributeError`. Its `sv_heath` attribute is renamed `sv_health`.

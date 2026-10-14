@@ -107,7 +107,6 @@ def test_rinex2_observation_values(obs2: ObservationDataFrame) -> None:
     assert row["Session"] == 1
 
 
-@pytest.mark.xfail(reason="The loss of lock and signal strength flags are read as extra decimals of the value")
 def test_rinex2_observation_ignores_flags(obs2: ObservationDataFrame) -> None:
     # The file reads "125339261.645 6": a signal strength of 6, no loss of lock indicator.
     assert obs2.loc[("G", 2, gnsstime(2018, 10, 12, 1, 0, 15)), "L1"] == 125339261.645
@@ -131,13 +130,21 @@ def test_rinex3_observation_values(obs3: ObservationDataFrame) -> None:
     assert row["Session"] == 2
 
 
-@pytest.mark.xfail(reason="The loss of lock and signal strength flags are read as extra decimals of the value")
 def test_rinex3_observation_ignores_flags() -> None:
     lines = OBS3.read_text().splitlines()
     assert lines[7].startswith("G02")
     lines[7] = "G02  23851268.160 7 125339261.645 6        1691.514          44.000"
     row = record(Rinex3ObsReader(lines).read(), ("G", 2, gnsstime(2018, 10, 12, 1, 0, 15)))
     assert (row["C1C"], row["L1C"]) == (23851268.160, 125339261.645)
+
+
+def test_rinex3_observation_with_100_satellites() -> None:
+    lines = OBS3.read_text().splitlines()[:6] + ["> 2018 10 12 01 00 15.0000000  0100"]
+    # The header declares observation types for GPS and Galileo.
+    lines += [f"{system}{prn:02d}  23851268.160 7 125339261.645 6" for system in "GE" for prn in range(1, 51)]
+    df = Rinex3ObsReader(lines).read()
+    assert len(df) == 100
+    assert set(df["L1C"]) == {125339261.645}
 
 
 def test_observation_readers_accept_lines() -> None:

@@ -92,12 +92,10 @@ class Rinex2ObsReader(ABCReader):
             for ifield in range(5):
                 # If the field exist (in case the  number of field / observation on the row < 5)
                 if irow * 5 + ifield < len(fields):
-                    # Extract the value for a specific field / observation.
+                    # Extract the value for a specific field / observation: 14 characters (F14.3), followed by
+                    # the loss of lock indicator and the signal strength (1 digit each), which are not read.
                     field = fields[irow * 5 + ifield]
-                    value = line[ifield * 16 : (ifield + 1) * 16]
-                    # Replace blank space in the number by 0 (e.g. " 12223.444 42" -> " 12223.444042")
-                    value = re.sub(r"[0-9\-][\s][0-9\-]", lambda x: x.group(0).replace(" ", "0"), value)
-                    data[field] = self._eval(value)
+                    data[field] = self._eval(line[ifield * 16 : ifield * 16 + 14])
 
             # Read next line or exit.
             self._cursor += 1
