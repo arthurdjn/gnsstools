@@ -1,10 +1,3 @@
-# File: trilat.py
-# Creation: Tuesday January 12th 2021
-# Author: Arthur Dujardin
-# ------
-# Copy_recight (c) 2021 Arthur Dujardin
-
-
 from typing import Any
 
 import numpy as np

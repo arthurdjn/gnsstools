@@ -1,12 +1,3 @@
-# Encoding: UTF-8
-# File: header.py
-# Creation: Tuesday January 26th 2021
-# Supervisor: Daphné Lercier (dlercier)
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 from collections import OrderedDict
 
 from .reader import ABCReader, Value

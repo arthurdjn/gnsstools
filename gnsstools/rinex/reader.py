@@ -1,11 +1,3 @@
-# Encoding: UTF-8
-# File: rinex.py
-# Creation: Monday January 25th 2021
-# Author: Arthur Dujardin (arthurdjn)
-# ------
-# Copyright (c) 2021, Makina Corpus
-
-
 import re
 from abc import ABC, abstractmethod
 
