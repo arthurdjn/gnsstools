@@ -1,0 +1,14 @@
+     3.03           OBSERVATION DATA    M                   RINEX VERSION / TYPE
+gnsstools tests     gnsstools           20181012 010000 UTC PGM / RUN BY / DATE
+Derived from edf1285b.18o, flags removed                    COMMENT
+G    4 C1C L1C D1C S1C                                      SYS / # / OBS TYPES
+E    4 C1C L1C D1C S1C                                      SYS / # / OBS TYPES
+                                                            END OF HEADER
+> 2018 10 12 01 00 15.0000000  0  3
+G02  23851268.160   125339261.645        1691.514          44.000
+G06  23925155.240   125727551.438         -52.452          43.000
+E07  28344990.660   148953923.973       -3075.672          37.000
+> 2018 10 12 01 00 30.0000000  0  3
+G02  23846448.480   125313934.059        1685.503          45.000
+G06  23925318.820   125728411.012         -62.062          43.000
+E07  28353767.980   149000049.348       -3074.290          36.000
