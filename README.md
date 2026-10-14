@@ -42,6 +42,8 @@ Last but not least, ``gnsstools`` lets you correct GNSS orbits from raw files, a
 | Rinex                        | in progress | <ul><li>[x] Rinex Observation</li><li>[x] Rinex Navigation</li><li>[x] SP3</li><li>[ ] Rinex Compact</li></ul> |
 | Satellites                   | in progress | <ul><li>[ ] Position</li><li>[ ] Clock Offset</li><li>[ ] Pseudo Distance</li></ul> |
 
+The [roadmap](https://github.com/arthurdjn/gnsstools/blob/main/ROADMAP.md) lists the known bugs and the missing features.
+
 ## Getting Started <a name = "getting_started"></a>
 
 These instructions will show you the steps on how to install and use ``gnsstools`` straight from the box.
@@ -240,5 +242,6 @@ df = rinex.load(filename)
 ## Contributing <a name = "contributing"></a>
 
 Contributions are welcome! [CONTRIBUTING.md](https://github.com/arthurdjn/gnsstools/blob/main/CONTRIBUTING.md) explains
-how to set up the development environment, run the tests and the checks, and open a pull request. Notable changes are
-listed in the [changelog](https://github.com/arthurdjn/gnsstools/blob/main/CHANGELOG.md).
+how to set up the development environment, run the tests and the checks, and open a pull request. The
+[roadmap](https://github.com/arthurdjn/gnsstools/blob/main/ROADMAP.md) is a good place to find something to work on,
+and notable changes are listed in the [changelog](https://github.com/arthurdjn/gnsstools/blob/main/CHANGELOG.md).

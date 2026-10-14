@@ -5,7 +5,8 @@ two categories:
 
 1. You want to implement a new feature:
    - In general, we accept any feature that fits the scope of this package: reading and processing GNSS files and data.
-     If you are unsure about the design of your feature, post about it in an issue first.
+     [`ROADMAP.md`](ROADMAP.md) lists the features we know are missing. If you are unsure about the design of your
+     feature, post about it in an issue first.
 1. You want to fix a bug:
    - Feel free to send a Pull Request (PR) any time you encounter a bug. Please provide a clear and concise description
      of what the bug was. If you are unsure whether it is a bug at all, or how to fix it, post about it in an issue.
@@ -51,7 +52,7 @@ make test
 
 or a single file with, *e.g.*, `uv run --no-sync pytest tests/test_rinex.py`.
 
-Known bugs have a test marked `xfail`, with the reason in the marker. The markers are strict: once you fix a bug, its
+Known bugs have a test marked `xfail`, with the reason in the marker, and are listed in [`ROADMAP.md`](ROADMAP.md). The markers are strict: once you fix a bug, its
 test passes, pytest reports it as an unexpected pass, and you should remove the marker in the same PR.
 
 ## Continuous Integration
