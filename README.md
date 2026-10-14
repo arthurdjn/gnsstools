@@ -19,14 +19,10 @@
 ## Table of Contents
 
 - [About](#about)
-- [Documentation](#documentation)
 - [Getting Started](#getting_started)
 - [GNSS Time](#gnsstime)
 - [Rinex](#rinex)
 - [Satellites](#satellites)
-- [Contributing](../CONTRIBUTING.md)
-- [Authors](#authors)
-- [Acknowledgments](#acknowledgement)
 
 ## About <a name = "about"></a>
 
@@ -42,18 +38,6 @@ Last but not least, ``gnsstools`` lets you correct GNSS orbits from raw files, a
 | GNSS Time                    | finished    | <ul><li>[x] DateTime</li><li>[x] GPS Time</li><li>[x] Julian Day</li><li>[x] Modified Julian Day</li></ul> |
 | Rinex                        | in progress | <ul><li>[x] Rinex Observation</li><li>[x] Rinex Navigation</li><li>[x] SP3</li><li>[ ] Rinex Compact</li></ul> |
 | Satellites                   | in progress | <ul><li>[ ] Position</li><li>[ ] Clock Offset</li><li>[ ] Pseudo Distance</li></ul> |
-
-## Documentation <a name = "documentation"></a>
-
-### Read The Docs
-
-The documentation is available online on [readthedocs](https://gnsstools.readthedocs.io/en/latest/). You will find the code documentation of the whole package, examples and tutorials. Make sure you have read the documentation before opening an issue.
-
-### Tutorials
-
-In addition of the examples and tutorials available on [readthedocs](https://gnsstools.readthedocs.io/en/latest/),
-there is a list of [jupyter notebooks](notebooks). Each one focuses on a specific topic: [reading files](notebooks/),
-[retrieving orbits](notebooks/), [computing receptor's position](notebooks) etc.
 
 ## Getting Started <a name = "getting_started"></a>
 
@@ -230,13 +214,3 @@ df = rinex.load(filename)
 ## Satellites <a name = "satellites"></a>
 
 *Work in Progress*
-
-## Contributing <a name = "contributing"></a>
-
-## Authors <a name = "authors"></a>
-
-## Acknowledgements <a name = "acknowledgement"></a>
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- References

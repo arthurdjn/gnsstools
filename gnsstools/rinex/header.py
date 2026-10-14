@@ -66,7 +66,6 @@ class RinexHeaderReader(ABCReader):
                 data["SystemName"] = name
             # For Rinex2 support
             elif name in dtype_string:
-                print(dtype_string, system, name)
                 data["System"] = system
                 data["SystemName"] = name
         # If nothing was found

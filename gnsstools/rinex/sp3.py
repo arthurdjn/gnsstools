@@ -17,7 +17,6 @@ from shapely.geometry import Point
 # GNSS Tools
 from .reader import ABCReader
 from .datasets import PositionDataFrame
-from gnsstools.logger import logger
 from gnsstools import gnsstime
 
 
