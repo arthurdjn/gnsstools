@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=400px src="media/logo.png" alt="Project logo"></a>
+ <img width=400px src="https://raw.githubusercontent.com/arthurdjn/gnsstools/main/media/logo.png" alt="Project logo"></a>
 </p>
 
 <div align="center">
@@ -45,17 +45,36 @@ These instructions will show you the steps on how to install and use ``gnsstools
 
 ### Installing
 
-The package is available from [PyPi](https://pypi.org/project/gnsstools/). To install it, use:
+``gnsstools`` requires Python 3.10 or later. It is not published on PyPI yet, so install it from this repository:
 
 ```
-pip install gnsstools
+pip install git+https://github.com/arthurdjn/gnsstools
 ```
 
-Alternatively, you can install the latest version from this repository. [Download](https://github.com/arthurdjn/gnsstools/archive/main.zip) the package from github, then from the root folder:
+or, in a project managed by [uv](https://docs.astral.sh/uv/):
 
 ```
-python install .
+uv add git+https://github.com/arthurdjn/gnsstools
 ```
+
+``rinex.load`` falls back to [georinex](https://github.com/geospace-code/georinex) for the formats it does not parse itself
+(Hatanaka-compressed RINEX, for instance). Install the optional extra to enable it:
+
+```
+pip install "gnsstools[georinex] @ git+https://github.com/arthurdjn/gnsstools"
+```
+
+### Developing
+
+Clone the repository and let [uv](https://docs.astral.sh/uv/) create the environment in ``.venv``:
+
+```
+git clone https://github.com/arthurdjn/gnsstools
+cd gnsstools
+make install  # or: uv sync --all-extras
+```
+
+Run ``make help`` to list the other development commands.
 
 ## GNSS Time <a name = "gnsstime"></a>
 
@@ -172,7 +191,7 @@ filename = "data/edf1285b.18o"
 df = rinex.load(filename)
 ```
 
-![Rinex2 Obs](media/rinex2_obs.png)
+![Rinex2 Obs](https://raw.githubusercontent.com/arthurdjn/gnsstools/main/media/rinex2_obs.png)
 
 ### Navigation
 
@@ -183,7 +202,7 @@ filename = "data/BRDC00IGS_R_20182850000_01D_MN.rnx"
 df = rinex.load(filename)
 ```
 
-![Rinex3 Nav](media/rinex3_nav.png)
+![Rinex3 Nav](https://raw.githubusercontent.com/arthurdjn/gnsstools/main/media/rinex3_nav.png)
 
 Once loaded, you select an ephemeris / satellite for a specific date with:
 
@@ -205,7 +224,7 @@ filename = "data/COM20225_15M.SP3"
 df = rinex.load(filename)
 ```
 
-![Rinex3 SP3](media/rinex3_sp3.png)
+![Rinex3 SP3](https://raw.githubusercontent.com/arthurdjn/gnsstools/main/media/rinex3_sp3.png)
 
 ### Compact
 

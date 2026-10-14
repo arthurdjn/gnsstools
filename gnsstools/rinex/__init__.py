@@ -87,7 +87,7 @@ def load(filename, *args, force=False, **kwargs):
             import georinex
         except ImportError as error:
             raise ImportError(
-                f"Reading '{filename}' requires the optional 'georinex' package: pip install georinex"
+                f"Reading '{filename}' requires the optional 'georinex' package: pip install 'gnsstools[georinex]'"
             ) from error
         ds = georinex.load(filename, *args, **kwargs)
         df = convert_georinex(ds)
