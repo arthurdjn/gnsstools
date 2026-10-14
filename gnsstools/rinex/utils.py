@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from shapely.geometry import Point
 
 if TYPE_CHECKING:
     # Only installed with the georinex extra.
@@ -41,24 +40,24 @@ def convert_georinex(xarray: "xr.Dataset", convert: bool = True) -> pd.DataFrame
         time_indexes: NDArray[np.intp] = np.array([], dtype=np.intp)
         for variable_name in variable_names:
             variable = xarray[variable_name]
-            time_indexes = np.argwhere(~np.isnan(np.array(variable[:, sv_index]))).flatten()
+            values = np.array(variable[:, sv_index], dtype=float)
+            # An epoch counts when any component of a 3D variable (e.g. a position) is set.
+            time_indexes = np.flatnonzero(~np.isnan(values).reshape(len(values), -1).all(axis=1))
             if len(time_indexes) > 0:
                 break
 
         # Retrieve the variable_names per PRN (satellite) and session id.
         for variable_name in variable_names:
             variable = xarray[variable_name]
-            values: list[Any] = list(np.array(variable[time_indexes, sv_index]))
-            # If the values are 3D, convert them to shapely Point.
-            if len(variable.dims) == 3:
-                points: list[Point | None] = []
-                for value in values:
-                    try:
-                        points.append(Point(value))
-                    except Exception:
-                        points.append(None)
-                values = points
-            df_data[variable_name].extend(values)
+            values = np.array(variable[time_indexes, sv_index])
+            # Split the 3D variables (e.g. positions) into a column per component, e.g. "position_x".
+            if values.ndim == 2:
+                dim = variable.dims[2]
+                labels = list(variable.coords[dim].values) if dim in variable.coords else range(values.shape[1])
+                for k, label in enumerate(labels):
+                    df_data[f"{variable_name}_{label}"].extend(values[:, k])
+            else:
+                df_data[variable_name].extend(values)
 
         # Create a new variable_name for "date"
         date = list(np.array(xarray.time[time_indexes]))

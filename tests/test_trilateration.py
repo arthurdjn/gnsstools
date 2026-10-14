@@ -13,8 +13,7 @@ CLOCK_OFFSET = 1_234.5  # Receiver clock offset times the speed of light (meters
 def satellites(sp3: PositionDataFrame, count: int) -> NDArray[np.float64]:
     at_epoch = sp3.index.get_level_values("Date") == gnsstime(2018, 10, 12)
     gps = sp3.index.get_level_values("System") == "G"
-    positions = sp3.loc[at_epoch & gps, "Position"].iloc[:count]
-    return np.array([point.coords[0] for point in positions]) * 1e3
+    return sp3.loc[at_epoch & gps, ["X", "Y", "Z"]].iloc[:count].to_numpy(dtype=np.float64)
 
 
 @pytest.mark.parametrize("count", [4, 5, 8])

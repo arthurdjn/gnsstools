@@ -24,7 +24,7 @@ All notable changes to this project are documented in this file. The format is b
   prints the header of the file (nor the navigation reader a line counter).
 - `rinex.load` imports `georinex` only for the files that need it, and raises an `ImportError` with the install
   command when it is missing, instead of a `NameError`.
-- The package is built from `pyproject.toml` and requires Python 3.10+, numpy 1.24+, pandas 2.0+ and shapely 2.0+.
+- The package is built from `pyproject.toml` and requires Python 3.10+, numpy 1.24+ and pandas 2.0+.
   `georinex` is an optional extra: `pip install "gnsstools[georinex]"`.
 - The package ships its type hints (`py.typed`), checked with `mypy --strict`.
 - `ABCReader.read` and `Satellite.system` are abstract.
@@ -41,14 +41,19 @@ All notable changes to this project are documented in this file. The format is b
 - `Trilateration` raises a `ValueError` instead of an `AssertionError` for fewer than 4 satellites or a number of
   distances that does not match, and `Trilateration.optimize` stops when the update of the parameters is smaller than
   `epsilon` (in meters) rather than when the variance factor stops changing.
+- SP3 positions and velocities are `X`, `Y`, `Z` and `VX`, `VY`, `VZ` float columns, and every SP3 value is in SI
+  units: meters, seconds, meters per second and seconds per second, instead of shapely points in kilometers, clocks in
+  microseconds, etc. The 3D variables of the georinex fallback are split into a column per component
+  (e.g. `position_x`). `shapely` is no longer a dependency.
 - `rinex.load` accepts `os.PathLike` paths, and reads the system of a RINEX 2 navigation file (GPS, GLONASS, ...)
   from its header instead of the last letter of its name.
 
 ### Fixed
 
 - The velocity records of SP3 files were rows of their own, with the same index as the position rows and their clock
-  rate in the `Clock` column. They are in the `Velocity` and `ClockRate` columns of the position rows.
-- The absent clocks of SP3 files (`999999.999999`) are NaN.
+  rate in the `Clock` column. They are in the `VX`, `VY`, `VZ` and `ClockRate` columns of the position rows.
+- The absent clocks (`999999.999999`) and positions (`0.000000`) of SP3 files are NaN.
+- The georinex fallback of `rinex.load` read wrong epochs for 3D variables.
 - `Trilateration.optimize` stopped after one iteration with exactly 4 satellites (the variance factor divided by
   zero), and ignored its `epsilon` argument.
 - `gnsstime.sow` counted the days from the day of the year modulo 7 instead of the start of the GPS week. It was only

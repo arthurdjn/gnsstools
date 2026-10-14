@@ -9,24 +9,30 @@
 import math
 from collections import defaultdict
 
-from shapely.geometry import Point
-
 from gnsstools import gnsstime
 
 from .datasets import PositionDataFrame
 from .reader import ABCReader, Record
 
-# Clocks and clock rates of the SP3 records that are bad or absent.
+# Clocks and clock rates of the SP3 records that are bad or absent. Absent positions are 0.000000.
 ABSENT_CLOCK = 999999.999999
+
+# Factors from the units of SP3 files to SI units.
+KILOMETER = 1e3  # Positions (km)
+DECIMETER = 0.1  # Velocities (dm/s)
+MICROSECOND = 1e-6  # Clocks (microseconds)
+CLOCK_RATE = 1e-10  # Clock rates (10^-4 microseconds/s)
+
+COLUMNS = ["X", "Y", "Z", "Clock", "VX", "VY", "VZ", "ClockRate", "Session"]
 
 
 class SP3Reader(ABCReader):
     """
     Reads `SP3` files (versions a to d) of precise orbits.
 
-    Each row is a satellite at an epoch, with its ``Position`` (km) and ``Clock`` (microseconds) and, when the file has
-    velocities, its ``Velocity`` (dm/s) and ``ClockRate`` (10^-4 microseconds/s). Absent clocks are NaN. The header is
-    stored in the ``attrs`` of the DataFrame.
+    Each row is a satellite at an epoch, with its position ``X``, ``Y``, ``Z`` (m) and its ``Clock`` (s) and, when the
+    file has velocities, its velocity ``VX``, ``VY``, ``VZ`` (m/s) and its ``ClockRate`` (s/s). Absent values are NaN.
+    The header is stored in the ``attrs`` of the DataFrame.
 
     * :attr:`lines` (list): List of lines to process.
 
@@ -89,13 +95,15 @@ class SP3Reader(ABCReader):
                     satellites.append(satellite.replace(" ", "0"))
         return satellites[:sat_num]
 
-    def _read_values(self, line: str) -> tuple[Point, float]:
-        """The 3 coordinates of a position or velocity record, and its clock or clock rate."""
-        point = Point(self._eval_float(line[4:18]), self._eval_float(line[18:32]), self._eval_float(line[32:46]))
+    def _read_values(self, line: str, unit: float, clock_unit: float) -> tuple[float, float, float, float]:
+        """The 3 coordinates of a position or velocity record, and its clock or clock rate, in SI units."""
+        x, y, z = (self._eval_float(line[4 + 14 * k : 18 + 14 * k]) for k in range(3))
+        if x == y == z == 0:
+            x, y, z = math.nan, math.nan, math.nan
         clock = self._eval(line[46:60])
         if not isinstance(clock, (int, float)) or clock >= ABSENT_CLOCK:
-            return point, math.nan
-        return point, clock
+            clock = math.nan
+        return x * unit, y * unit, z * unit, clock * clock_unit
 
     def read(self) -> PositionDataFrame:
         self._cursor = 0
@@ -134,15 +142,19 @@ class SP3Reader(ABCReader):
                     }
                 record = records[satellite, date]
                 if line.startswith("P"):
-                    record["Position"], record["Clock"] = self._read_values(line)
+                    record["X"], record["Y"], record["Z"], record["Clock"] = self._read_values(
+                        line, KILOMETER, MICROSECOND
+                    )
                 else:
-                    record["Velocity"], record["ClockRate"] = self._read_values(line)
+                    record["VX"], record["VY"], record["VZ"], record["ClockRate"] = self._read_values(
+                        line, DECIMETER, CLOCK_RATE
+                    )
 
         # Create the DataFrame
         df = PositionDataFrame(list(records.values()))
         # Make it pretty
         df = df.set_index(["System", "PRN", "Date"])
-        columns = sorted([col for col in df.columns])
+        columns = [col for col in COLUMNS if col in df.columns]
         df = df.reindex(columns, axis=1)
         df = df.sort_index()
         df.attrs = dict(header.items())

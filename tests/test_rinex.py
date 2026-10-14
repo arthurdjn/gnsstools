@@ -4,15 +4,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-from shapely.geometry import Point
 
 from gnsstools import gnsstime, rinex
 from gnsstools.rinex.datasets import NavigationDataFrame, ObservationDataFrame, PositionDataFrame
 from gnsstools.rinex.obs2 import Rinex2ObsReader
 from gnsstools.rinex.obs3 import Rinex3ObsReader
+from gnsstools.rinex.sp3 import SP3Reader
 from gnsstools.rinex.utils import convert_georinex
 
-from .conftest import NAV2, NAV2_GLONASS, NAV3, OBS2, OBS3, SP3_VELOCITY, record
+from .conftest import NAV2, NAV2_GLONASS, NAV3, OBS2, OBS3, SP3, SP3_VELOCITY, record
 
 INDEX = ["System", "PRN", "Date"]
 
@@ -154,7 +154,7 @@ def test_observation_readers_accept_lines() -> None:
 def test_sp3(sp3: PositionDataFrame) -> None:
     assert isinstance(sp3, PositionDataFrame)
     assert sp3.index.names == INDEX
-    assert sorted(sp3.columns) == ["Clock", "Position", "Session"]
+    assert list(sp3.columns) == ["X", "Y", "Z", "Clock", "Session"]
     # 7 epochs of 51 satellites (32 GPS, 19 GLONASS).
     assert len(sp3) == 7 * 51
     assert sp3.groupby(level="System").size().to_dict() == {"G": 7 * 32, "R": 7 * 19}
@@ -162,9 +162,9 @@ def test_sp3(sp3: PositionDataFrame) -> None:
 
 def test_sp3_values(sp3: PositionDataFrame) -> None:
     row = record(sp3, ("G", 1, gnsstime(2018, 10, 12)))
-    assert isinstance(row["Position"], Point)
-    assert row["Position"].coords[0] == (-17852.839089, -6014.552104, 18675.309680)
-    assert row["Clock"] == -99.264764
+    # SP3 files are in kilometers and microseconds.
+    np.testing.assert_allclose(row[["X", "Y", "Z"]], [-17852839.089, -6014552.104, 18675309.680])
+    assert row["Clock"] == pytest.approx(-99.264764e-6, abs=1e-15)
     assert sp3.loc[("G", 1, gnsstime(2018, 10, 12, 1, 30)), "Session"] == 7
 
 
@@ -192,8 +192,17 @@ def test_sp3d_with_another_extension(sp3_mgex: PositionDataFrame) -> None:
 def test_sp3_absent_clocks(sp3_mgex: PositionDataFrame) -> None:
     absent = record(sp3_mgex, ("R", 15, gnsstime(2018, 10, 12, 18, 15)))
     assert np.isnan(absent["Clock"])
-    assert absent["Position"].coords[0] == (-831.097003, -10665.027269, -23139.981120)
-    assert record(sp3_mgex, ("R", 15, gnsstime(2018, 10, 12)))["Clock"] == -17.535961
+    np.testing.assert_allclose(absent[["X", "Y", "Z"]], [-831097.003, -10665027.269, -23139981.120])
+    assert record(sp3_mgex, ("R", 15, gnsstime(2018, 10, 12)))["Clock"] == pytest.approx(-17.535961e-6, abs=1e-15)
+
+
+def test_sp3_absent_positions() -> None:
+    lines = SP3.read_text().splitlines()
+    index = lines.index("PG02  15066.635048  21940.685847  -1256.196505    -27.377558")
+    lines[index] = "PG02      0.000000      0.000000      0.000000    -27.377558"
+    row = record(SP3Reader(lines).read(), ("G", 2, gnsstime(2018, 10, 12)))
+    assert row[["X", "Y", "Z"]].isna().all()
+    assert row["Clock"] == pytest.approx(-27.377558e-6, abs=1e-15)
 
 
 def test_sp3_velocities() -> None:
@@ -201,11 +210,14 @@ def test_sp3_velocities() -> None:
     assert sp3.attrs["PosVelFlag"] == "V"
     # The position and the velocity of a satellite at an epoch are in the same row.
     assert len(sp3) == 4
-    assert sorted(sp3.columns) == ["Clock", "ClockRate", "Position", "Session", "Velocity"]
+    assert list(sp3.columns) == ["X", "Y", "Z", "Clock", "VX", "VY", "VZ", "ClockRate", "Session"]
     row = record(sp3, ("G", 1, gnsstime(2018, 10, 12, 0, 30)))
-    assert row["Position"].coords[0] == (-19742.315869, -9449.478234, 15086.967467)
-    assert row["Velocity"].coords[0] == (-10070.4184, -16491.237167, -23003.008256)
-    assert (row["Clock"], row["ClockRate"], row["Session"]) == (-99.273602, -0.049106, 2)
+    np.testing.assert_allclose(row[["X", "Y", "Z"]], [-19742315.869, -9449478.234, 15086967.467])
+    # SP3 velocities are in dm/s, and clock rates in 10^-4 microseconds/s.
+    np.testing.assert_allclose(row[["VX", "VY", "VZ"]], [-1007.04184, -1649.1237167, -2300.3008256])
+    assert row["Clock"] == pytest.approx(-99.273602e-6, abs=1e-15)
+    assert row["ClockRate"] == pytest.approx(-0.049106e-10, abs=1e-20)
+    assert row["Session"] == 2
 
 
 def test_unknown_formats_need_georinex(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -225,3 +237,16 @@ def test_convert_georinex_keeps_every_satellite() -> None:
     df = convert_georinex(ds)
     assert df.index.names == INDEX
     assert df.groupby(level=["System", "PRN"]).size().to_dict() == {("E", 5): 1, ("G", 1): 2}
+
+
+def test_convert_georinex_splits_3d_variables() -> None:
+    xr = pytest.importorskip("xarray")
+    times = pd.to_datetime(["2018-10-12T00:00"])
+    position = [[[1.0, 2.0, 3.0]]]
+    ds = xr.Dataset(
+        {"position": (("time", "sv", "ECEF"), position)},
+        coords={"time": times, "sv": ["G01"], "ECEF": ["x", "y", "z"]},
+    )
+    df = convert_georinex(ds)
+    assert list(df.columns) == ["position_x", "position_y", "position_z"]
+    assert df.iloc[0].tolist() == [1.0, 2.0, 3.0]
