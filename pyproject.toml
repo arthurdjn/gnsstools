@@ -64,6 +64,8 @@ Issues = "https://github.com/arthurdjn/gnsstools/issues"
 
 [dependency-groups]
 dev = [
+    "pytest>=8.4.0",
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.0",
 ]
 
@@ -80,3 +82,17 @@ select = ["E4", "E7", "E9", "F", "I", "W", "UP", "B"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["gnsstools"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
+# Known bugs are marked xfail: a fix makes them pass, and a strict xfail then fails until the marker is removed.
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["gnsstools"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

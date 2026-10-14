@@ -2,6 +2,7 @@
 
 PACKAGE:=gnsstools
 SRC:=$(PACKAGE)
+TESTS:=tests
 CMD:=uv run --no-sync
 
 # Environment
@@ -17,19 +18,29 @@ lock: ## Update uv.lock after editing the dependencies in pyproject.toml
 # Linting, formatting, etc.
 
 .PHONY: format
-format: ## Format the source code
-	$(CMD) ruff format $(SRC)
+format: ## Format the source code and the tests
+	$(CMD) ruff format $(SRC) $(TESTS)
 
 .PHONY: lint
-lint: ## Lint the source code
-	$(CMD) ruff check $(SRC)
+lint: ## Lint the source code and the tests
+	$(CMD) ruff check $(SRC) $(TESTS)
 
 .PHONY: lint-fix
-lint-fix: ## Lint the source code and apply the safe fixes
-	$(CMD) ruff check --fix $(SRC)
+lint-fix: ## Lint the source code and the tests, and apply the safe fixes
+	$(CMD) ruff check --fix $(SRC) $(TESTS)
 
 .PHONY: all
 all: format lint-fix ## Run all formatting and linting commands
+
+# Tests
+
+.PHONY: test
+test: ## Run the tests
+	$(CMD) pytest
+
+.PHONY: coverage
+coverage: ## Run the tests and report the coverage of the source code
+	$(CMD) pytest --cov --cov-report=term --cov-report=html
 
 # Packaging
 
