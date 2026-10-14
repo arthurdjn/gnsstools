@@ -27,11 +27,23 @@ All notable changes to this project are documented in this file. The format is b
   away from the date.
 - The data sources field of the Galileo navigation records is read into a `DataSources` column instead of `GPSWeek`,
   and `GALILEO` takes a `data_sources` argument instead of `gps_week`.
+- `gnsstime` carries the fractional part of the day, hour, minute and second to the smaller units, as the README
+  says (only seconds were), rounded to the microsecond. It raises a `TypeError` instead of returning `None` when the
+  month or the day is missing.
+- `gnsstime.frommjd`, `fromjd` and `fromjd50` no longer use `datetime.utcfromtimestamp`, deprecated since Python 3.12:
+  they work for dates before 1970 on Windows.
 - `rinex.load` accepts `os.PathLike` paths, and reads the system of a RINEX 2 navigation file (GPS, GLONASS, ...)
   from its header instead of the last letter of its name.
 
 ### Fixed
 
+- `gnsstime.sow` counted the days from the day of the year modulo 7 instead of the start of the GPS week. It was only
+  right in the years that start on a Monday (like 2018), and so were the positions of `get_satellite_position`.
+- Copying or unpickling a `gnsstime` returned `None`.
+- `gnsstime` read the two-digit years from 80 to 99 as years 80 to 99 instead of 1980 to 1999, and floored the
+  fractional seconds (`second=1.001` gave 999 microseconds).
+- `gnsstime.fromdoy` dropped the fractional part of the second of the day.
+- `to_gnsstime` and `gnsstime.fromdatetime64` only converted nanosecond `datetime64` values.
 - `NavigationDataFrame.select` returned a satellite without ephemeris when several records share the closest epoch,
   like the F/NAV and I/NAV messages of Galileo in the merged IGS files. It uses the first record.
 - `get_satellite_position` used the data sources field as the week of Galileo satellites: their positions were off by
