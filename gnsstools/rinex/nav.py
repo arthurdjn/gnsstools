@@ -46,7 +46,8 @@ GALILEO_FIELDS = (
     ("Cuc", "e", "Cus", "sqrtA"),
     ("TOE", "Cic", "Omega0", "Cis"),
     ("i0", "Crc", "Omega", "OmegaDot"),
-    ("IDOT", "GPSWeek", "GALWeek"),
+    # The data sources tell the message (I/NAV, F/NAV) and the signals of the clock parameters.
+    ("IDOT", "DataSources", "GALWeek"),
     ("SISA", "SVHealth", "BGDe5a", "BGDe5b"),
     ("TransTime",),
 )

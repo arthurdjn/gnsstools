@@ -37,7 +37,7 @@ class GALILEO(Satellite):
         omega: float | None = None,
         omega_dot: float | None = None,
         idot: float | None = None,
-        gps_week: float | None = None,
+        data_sources: float | None = None,
         gal_week: float | None = None,
         sisa: float | None = None,
         sv_health: float | None = None,
@@ -72,7 +72,7 @@ class GALILEO(Satellite):
         self.omega_dot = omega_dot
         # Sixth row
         self.idot = idot
-        self.gps_week = gps_week
+        self.data_sources = data_sources
         self.gal_week = gal_week
         # Seventh row
         self.sisa = sisa
@@ -117,6 +117,7 @@ class GALILEO(Satellite):
         rep += f"\n  omega_dot:           {self.omega_dot: .6e} [rad/s]"
         # Sixth line
         rep += f"\n  idot:                {self.idot: .6e} [rad/s]"
+        rep += f"\n  data_sources:        {self.data_sources: 13} (message and signals of the clock, bit field)"
         rep += f"\n  gal_week:            {self.gal_week: .6e} (to go with TOE)"
         # Seventh line
         rep += f"\n  sisa:                {self.sisa: .6e} [m] (Signal in space accuracy)"

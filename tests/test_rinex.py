@@ -62,7 +62,6 @@ def test_navigation_galileo_values(nav3: NavigationDataFrame) -> None:
     assert set(records["sqrtA"]) == {5.440611371994e03}
 
 
-@pytest.mark.xfail(reason="The data sources field of Galileo records is read into the GPSWeek column")
 def test_navigation_galileo_data_sources(nav3: NavigationDataFrame) -> None:
     records = nav3.loc[[("E", 1, gnsstime(2018, 10, 12, 0, 50))]]
     assert "DataSources" in records.columns
